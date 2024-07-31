@@ -142,7 +142,8 @@ class PlaylistSelectionFrame
             {
                 updating = false;
                 playlists = main.library.getPlaylists();
-                fireIntervalAdded(PlaylistListListModel.this, 0, playlists.size() - 1);
+                if (!playlists.isEmpty())
+                    fireIntervalAdded(PlaylistListListModel.this, 0, playlists.size() - 1);
                 ResourceFrame frame;
                 for (Playlist d : deleted) {
                     frame = main.desktopPane.getFrameForResource(d);
