@@ -1,8 +1,8 @@
 package io.github.thomashuss.spat.gui;
 
 import io.github.thomashuss.spat.library.Artist;
-import io.github.thomashuss.spat.library.Track;
 import io.github.thomashuss.spat.library.SavedResourceCollection;
+import io.github.thomashuss.spat.library.Track;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;

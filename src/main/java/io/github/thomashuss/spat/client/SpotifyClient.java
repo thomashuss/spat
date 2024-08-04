@@ -4,15 +4,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import io.github.thomashuss.spat.library.Artist;
-import io.github.thomashuss.spat.library.Track;
 import io.github.thomashuss.spat.library.Album;
+import io.github.thomashuss.spat.library.Artist;
 import io.github.thomashuss.spat.library.AudioFeatures;
 import io.github.thomashuss.spat.library.Genre;
 import io.github.thomashuss.spat.library.Label;
 import io.github.thomashuss.spat.library.Library;
 import io.github.thomashuss.spat.library.Playlist;
 import io.github.thomashuss.spat.library.SavedResourceCollection;
+import io.github.thomashuss.spat.library.Track;
 
 import java.io.BufferedReader;
 import java.io.IOException;

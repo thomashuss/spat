@@ -1,8 +1,8 @@
 package io.github.thomashuss.spat.gui;
 
+import io.github.thomashuss.spat.client.APICollectionMutator;
 import io.github.thomashuss.spat.client.SpotifyAuthenticationException;
 import io.github.thomashuss.spat.client.SpotifyClientHttpException;
-import io.github.thomashuss.spat.client.APICollectionMutator;
 import io.github.thomashuss.spat.client.SpotifyClientStateException;
 import io.github.thomashuss.spat.library.LibraryResource;
 

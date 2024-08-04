@@ -3,7 +3,6 @@ package io.github.thomashuss.spat.library;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.io.Serial;
 import java.net.URL;
 
 /**
@@ -13,8 +12,6 @@ import java.net.URL;
 public class Track
         extends SpotifyResource
 {
-    @Serial
-    private static final long serialVersionUID = 1L;
     @JsonIgnore
     private transient Album album;  // Transient to avoid a cyclic dependency.
     @JsonIgnore

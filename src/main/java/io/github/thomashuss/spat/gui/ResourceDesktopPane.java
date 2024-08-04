@@ -1,7 +1,7 @@
 package io.github.thomashuss.spat.gui;
 
-import io.github.thomashuss.spat.library.Artist;
 import io.github.thomashuss.spat.library.Album;
+import io.github.thomashuss.spat.library.Artist;
 import io.github.thomashuss.spat.library.Genre;
 import io.github.thomashuss.spat.library.Label;
 import io.github.thomashuss.spat.library.LibraryResource;

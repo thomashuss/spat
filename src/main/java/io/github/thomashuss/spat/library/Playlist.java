@@ -2,8 +2,6 @@ package io.github.thomashuss.spat.library;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import java.io.Serial;
-
 /**
  * Corresponds to a playlist in Spotify's model.  Depends on <code>Track</code>.
  */
@@ -11,8 +9,6 @@ public class Playlist
         extends SavedResourceCollection<Track>
         implements AbstractSpotifyResource
 {
-    @Serial
-    private static final long serialVersionUID = 1L;
     @JsonIgnore
     private final String id;
 

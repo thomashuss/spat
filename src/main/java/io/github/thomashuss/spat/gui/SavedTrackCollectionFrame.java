@@ -1,9 +1,9 @@
 package io.github.thomashuss.spat.gui;
 
 import io.github.thomashuss.spat.library.LibraryResource;
-import io.github.thomashuss.spat.library.Track;
 import io.github.thomashuss.spat.library.Playlist;
 import io.github.thomashuss.spat.library.SavedResourceCollection;
+import io.github.thomashuss.spat.library.Track;
 
 import javax.swing.AbstractAction;
 import javax.swing.BoxLayout;

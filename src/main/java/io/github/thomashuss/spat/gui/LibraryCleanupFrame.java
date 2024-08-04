@@ -1,7 +1,7 @@
 package io.github.thomashuss.spat.gui;
 
-import io.github.thomashuss.spat.library.LibraryResource;
 import io.github.thomashuss.spat.library.Library;
+import io.github.thomashuss.spat.library.LibraryResource;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;

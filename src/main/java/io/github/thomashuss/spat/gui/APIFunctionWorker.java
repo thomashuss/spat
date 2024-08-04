@@ -1,9 +1,9 @@
 package io.github.thomashuss.spat.gui;
 
+import io.github.thomashuss.spat.client.APIFunction;
 import io.github.thomashuss.spat.client.SpotifyAuthenticationException;
 import io.github.thomashuss.spat.client.SpotifyClientHttpException;
 import io.github.thomashuss.spat.client.SpotifyClientStateException;
-import io.github.thomashuss.spat.client.APIFunction;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
