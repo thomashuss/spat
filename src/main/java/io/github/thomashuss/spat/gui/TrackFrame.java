@@ -1,32 +1,27 @@
 package io.github.thomashuss.spat.gui;
 
 import io.github.thomashuss.spat.library.AudioFeatures;
-import io.github.thomashuss.spat.library.Track;
-import javazoom.jl.player.Player;
 import io.github.thomashuss.spat.library.LibraryResource;
+import io.github.thomashuss.spat.library.Track;
 
-import javax.net.ssl.HttpsURLConnection;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
-import javax.swing.SwingWorker;
+import javax.swing.event.InternalFrameAdapter;
+import javax.swing.event.InternalFrameEvent;
 import javax.swing.table.AbstractTableModel;
 import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.io.InputStream;
-import java.util.List;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
+import java.beans.PropertyChangeEvent;
 
 class TrackFrame
         extends NodeFrame
@@ -38,8 +33,6 @@ class TrackFrame
     private final ResourceLabel albumLabel;
     private final Box artistBox;
     private final FeaturesTableModel tableModel;
-    private final JButton playPauseButton;
-    private PreviewWorker previewWorker;
 
     public TrackFrame(MainGUI main, Track track)
     {
@@ -55,9 +48,7 @@ class TrackFrame
         nameLabel.setFont(new Font(nameLabel.getFont().getName(), Font.BOLD, 18));
         box.add(nameLabel);
         box.add(Box.createHorizontalStrut(HEADER_MARGIN));
-        playPauseButton = new JButton(PLAY);
-        playPauseButton.addActionListener(actionEvent -> playPause());
-        box.add(playPauseButton);
+        box.add(new PreviewButton());
         box.add(Box.createHorizontalGlue());
         headerPanel.add(box);
         headerPanel.add(Box.createVerticalStrut(5));
@@ -113,16 +104,6 @@ class TrackFrame
         setSize(DIMENSION);
     }
 
-    private void playPause()
-    {
-        if (previewWorker == null) {
-            previewWorker = new PreviewWorker();
-            previewWorker.execute();
-        } else {
-            previewWorker.stop();
-        }
-    }
-
     @Override
     public void update()
     {
@@ -137,6 +118,57 @@ class TrackFrame
     public LibraryResource getResource()
     {
         return track;
+    }
+
+    private class PreviewButton
+            extends APIButton
+    {
+        protected PreviewButton()
+        {
+            super(PLAY);
+            addActionListener(actionEvent -> playPause());
+            addInternalFrameListener(new InternalFrameAdapter()
+            {
+                @Override
+                public void internalFrameClosed(InternalFrameEvent e)
+                {
+                    stopPreview();
+                    setText(PLAY);
+                }
+            });
+        }
+
+        private void stopPreview()
+        {
+            main.stopPreview(track);
+        }
+
+        private void startPreview()
+        {
+            main.previewTrack(track);
+        }
+
+        private void playPause()
+        {
+            if (main.getPreviewingTrack() == track) {
+                stopPreview();
+            } else {
+                startPreview();
+            }
+        }
+
+        @Override
+        public void propertyChange(PropertyChangeEvent event)
+        {
+            super.propertyChange(event);
+            if (MainGUI.PREVIEWING_TRACK_KEY.equals(event.getPropertyName())) {
+                if (event.getOldValue() == track) {
+                    setText(PLAY);
+                } else if (event.getNewValue() == track) {
+                    setText(STOP);
+                }
+            }
+        }
     }
 
     private class FeaturesTableModel
@@ -209,56 +241,6 @@ class TrackFrame
                     }
                 };
             }
-        }
-    }
-
-    private class PreviewWorker
-            extends SwingWorker<Void, Void>
-    {
-        private Player player;
-
-        @Override
-        protected Void doInBackground()
-        throws Exception
-        {
-            HttpsURLConnection conn = (HttpsURLConnection) track.getPreviewUrl().openConnection();
-            try (InputStream is = conn.getInputStream()) {
-                synchronized (this) {
-                    player = new Player(is);
-                }
-                publish((Void) null);
-                player.play();
-            }
-            return null;
-        }
-
-        public void stop()
-        {
-            synchronized (this) {
-                if (player != null) player.close();
-            }
-        }
-
-        @Override
-        protected void process(List<Void> chunks)
-        {
-            playPauseButton.setText(STOP);
-        }
-
-        @Override
-        protected void done()
-        {
-            try {
-                get();
-            } catch (InterruptedException | CancellationException e) {
-                stop();
-            } catch (ExecutionException e) {
-                JOptionPane.showInternalMessageDialog(TrackFrame.this,
-                        "There was an error playing the preview:\n\n" + e.getCause().getMessage(),
-                        "Error", JOptionPane.ERROR_MESSAGE);
-            }
-            previewWorker = null;
-            playPauseButton.setText(PLAY);
         }
     }
 }

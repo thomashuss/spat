@@ -2,10 +2,13 @@ package io.github.thomashuss.spat.gui;
 
 import io.github.thomashuss.spat.Spat;
 import io.github.thomashuss.spat.client.SpotifyClient;
+import io.github.thomashuss.spat.library.Library;
 import io.github.thomashuss.spat.library.SaveDirectory;
 import io.github.thomashuss.spat.library.SaveFileException;
-import io.github.thomashuss.spat.library.Library;
+import io.github.thomashuss.spat.library.Track;
+import javazoom.jl.player.Player;
 
+import javax.net.ssl.HttpsURLConnection;
 import javax.swing.Box;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFileChooser;
@@ -36,8 +39,11 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.prefs.BackingStoreException;
 
@@ -47,6 +53,7 @@ public class MainGUI
 {
     public static final String HAS_AUTH_KEY = "hasAuth";
     public static final String HAS_LIBRARY_KEY = "hasLibrary";
+    public static final String PREVIEWING_TRACK_KEY = "previewingTrack";
     private static final Dimension DESKTOP_DIMENSION = new Dimension(1000, 800);
     final ResourceDesktopPane desktopPane;
     /**
@@ -61,6 +68,7 @@ public class MainGUI
     private FrameCheckbox playlistsCheckbox;
     private JFileChooser chooser;
     private LoginFrame loginFrame;
+    private PreviewWorker previewWorker;
 
     public MainGUI()
     {
@@ -364,6 +372,39 @@ public class MainGUI
         }
     }
 
+    Track getPreviewingTrack()
+    {
+        if (previewWorker != null && previewWorker.isPlaying) {
+            return previewWorker.track;
+        }
+        return null;
+    }
+
+    void stopPreview()
+    {
+        if (previewWorker != null && previewWorker.isPlaying) {
+            previewWorker.stop();
+        }
+        previewWorker = null;
+    }
+
+    void stopPreview(Track track)
+    {
+        if (previewWorker != null && previewWorker.track == track) {
+            if (previewWorker.isPlaying) {
+                previewWorker.stop();
+            }
+            previewWorker = null;
+        }
+    }
+
+    void previewTrack(Track track)
+    {
+        stopPreview();
+        previewWorker = new PreviewWorker(track);
+        previewWorker.execute();
+    }
+
     private abstract class FrameCheckbox
             extends JCheckBoxMenuItem
     {
@@ -484,6 +525,67 @@ public class MainGUI
             } catch (ExecutionException | InterruptedException e) {
                 uriOpenFailed(uri);
             }
+        }
+    }
+
+    private class PreviewWorker
+            extends SwingWorker<Void, Void>
+    {
+        private final Track track;
+        private boolean isPlaying = false;
+        private Player player;
+
+        private PreviewWorker(Track track)
+        {
+            super();
+            this.track = track;
+        }
+
+        @Override
+        protected Void doInBackground()
+        throws Exception
+        {
+            HttpsURLConnection conn = (HttpsURLConnection) track.getPreviewUrl().openConnection();
+            try (InputStream is = conn.getInputStream()) {
+                synchronized (this) {
+                    player = new Player(is);
+                }
+                publish((Void) null);
+                isPlaying = true;
+                player.play();
+            }
+            return null;
+        }
+
+        private void stop()
+        {
+            synchronized (this) {
+                if (player != null) {
+                    player.close();
+                }
+            }
+        }
+
+        @Override
+        protected void process(List<Void> chunks)
+        {
+            statePcs.firePropertyChange(PREVIEWING_TRACK_KEY, null, track);
+        }
+
+        @Override
+        protected void done()
+        {
+            try {
+                get();
+            } catch (InterruptedException | CancellationException e) {
+                stop();
+            } catch (ExecutionException e) {
+                JOptionPane.showInternalMessageDialog(MainGUI.this,
+                        "There was an error playing the preview:\n\n" + e.getCause().getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+            statePcs.firePropertyChange(PREVIEWING_TRACK_KEY, track, null);
+            isPlaying = false;
         }
     }
 }
