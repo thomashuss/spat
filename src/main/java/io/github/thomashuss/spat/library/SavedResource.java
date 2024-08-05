@@ -1,6 +1,7 @@
 package io.github.thomashuss.spat.library;
 
 import java.time.ZonedDateTime;
+import java.util.Objects;
 
 /**
  * Retains metadata about a particular save of a <code>LibraryResource</code>.
@@ -49,7 +50,7 @@ public abstract sealed class SavedResource<T extends LibraryResource>
 
     public int hashCode()
     {
-        return 31 * addedAt.hashCode() + resource.hashCode();
+        return Objects.hash(addedAt, resource);
     }
 
     public boolean equals(Object other)
