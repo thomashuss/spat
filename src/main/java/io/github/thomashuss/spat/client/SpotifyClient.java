@@ -113,7 +113,11 @@ public class SpotifyClient
         library.clearSavedAlbums();
         do {
             root = apiToTree(new URI(apiUrl));
-            if (size == 0) size = root.get("total").asInt(0);
+            if (size == 0) {
+                if ((size = root.get("total").asInt(0)) == 0) {
+                    break;
+                }
+            }
             items = root.get("items");
             if (items != null && items.isArray()) {
                 for (JsonNode savedAlbumNode : items) {
@@ -331,7 +335,7 @@ public class SpotifyClient
 
     private URL[] treeToImages(JsonNode node)
     {
-        if (node != null && node.isArray()) {
+        if (node != null && node.isArray() && !node.isEmpty()) {
             URL[] imgs = new URL[node.size()];
             int i = 0;
             for (JsonNode imgNode : node) {
@@ -385,7 +389,7 @@ public class SpotifyClient
     private synchronized Artist[] treeToArtists(JsonNode node)
     throws IOException
     {
-        if (node != null && node.isArray()) {
+        if (node != null && node.isArray() && !node.isEmpty()) {
             Artist[] artists = new Artist[node.size()];
             int i = 0;
             for (JsonNode artistNode : node) {
