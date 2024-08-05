@@ -1,14 +1,11 @@
 package io.github.thomashuss.spat.gui;
 
 import io.github.thomashuss.spat.client.ProgressTracker;
-import io.github.thomashuss.spat.client.SpotifyAuthenticationException;
-import io.github.thomashuss.spat.client.SpotifyClientHttpException;
-import io.github.thomashuss.spat.client.SpotifyClientStateException;
+import io.github.thomashuss.spat.client.SpotifyClientException;
 
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.concurrent.ExecutionException;
 
 abstract class APIWorker<T>
@@ -30,13 +27,13 @@ abstract class APIWorker<T>
 
     @Override
     protected T doInBackground()
-    throws SpotifyAuthenticationException, SpotifyClientHttpException, SpotifyClientStateException, IOException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         return doTask();
     }
 
     abstract protected T doTask()
-    throws SpotifyAuthenticationException, SpotifyClientHttpException, SpotifyClientStateException, IOException, URISyntaxException;
+    throws SpotifyClientException, IOException;
 
     @Override
     protected void done()
@@ -46,11 +43,9 @@ abstract class APIWorker<T>
             onTaskSuccess(get());
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
-            if (cause instanceof SpotifyClientHttpException
-                    || cause instanceof SpotifyAuthenticationException
-                    || cause instanceof SpotifyClientStateException) {
+            if (cause instanceof SpotifyClientException) {
                 JOptionPane.showInternalMessageDialog(main.desktopPane, "There was a problem communicating with Spotify:\n\n" + cause.getMessage(), "Spotify client error", JOptionPane.ERROR_MESSAGE);
-            } else if (cause instanceof IOException || cause instanceof URISyntaxException) {
+            } else if (cause instanceof IOException) {
                 JOptionPane.showInternalMessageDialog(main.desktopPane, "There was an I/O error:\n\n" + cause.getMessage(), "I/O error", JOptionPane.ERROR_MESSAGE);
             } else {
                 throw new RuntimeException(e);

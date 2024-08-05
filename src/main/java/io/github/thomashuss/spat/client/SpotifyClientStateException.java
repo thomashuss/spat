@@ -1,9 +1,9 @@
 package io.github.thomashuss.spat.client;
 
 public class SpotifyClientStateException
-        extends Exception
+        extends SpotifyClientException
 {
-    public SpotifyClientStateException(String msg)
+    SpotifyClientStateException(String msg)
     {
         super(msg);
     }

@@ -1,7 +1,6 @@
 package io.github.thomashuss.spat.gui;
 
-import io.github.thomashuss.spat.client.SpotifyAuthenticationException;
-import io.github.thomashuss.spat.client.SpotifyClientHttpException;
+import io.github.thomashuss.spat.client.SpotifyClientException;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -96,7 +95,7 @@ class LoginFrame
 
         @Override
         protected Void doInBackground()
-        throws IOException, SpotifyAuthenticationException, SpotifyClientHttpException, URISyntaxException
+        throws IOException, SpotifyClientException
         {
             synchronized (main.client) {
                 main.client.loginCallback(callbackUri);

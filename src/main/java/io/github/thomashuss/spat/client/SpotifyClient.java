@@ -62,7 +62,7 @@ public class SpotifyClient
 
     public synchronized void populatePlaylist(Playlist p,
                                               ProgressTracker progressTracker)
-    throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         String apiUrl;
         JsonNode root;
@@ -72,33 +72,37 @@ public class SpotifyClient
         progressTracker.updateProgress(0);
 
         apiUrl = "https://api.spotify.com/v1/playlists/" + p.getId();
-        root = apiToTree(new URI(apiUrl));
-        p.setSnapshotId(root.get("snapshot_id").asText());
+        try {
+            root = apiToTree(new URI(apiUrl));
+            p.setSnapshotId(root.get("snapshot_id").asText());
 
-        root = root.get("tracks");
-        if (root != null) {
-            p.clearResources();
-            do {
-                if (size == 0) {
-                    if ((size = root.get("total").asInt(0)) == 0) {
-                        break;
+            root = root.get("tracks");
+            if (root != null) {
+                p.clearResources();
+                do {
+                    if (size == 0) {
+                        if ((size = root.get("total").asInt(0)) == 0) {
+                            break;
+                        }
                     }
-                }
-                if ((items = root.get("items")) != null) {
-                    treeToSavedTrackCollection(items, p);
-                    progress += (float) items.size() / size * 100;
-                    progressTracker.updateProgress((int) progress);
-                }
-            } while ((root = root.get("next")) != null
-                    && (apiUrl = root.asText(null)) != null
-                    && (root = apiToTree(new URI(apiUrl))) != null);
-            library.markModified(p);
+                    if ((items = root.get("items")) != null) {
+                        treeToSavedTrackCollection(items, p);
+                        progress += (float) items.size() / size * 100;
+                        progressTracker.updateProgress((int) progress);
+                    }
+                } while ((root = root.get("next")) != null
+                        && (apiUrl = root.asText(null)) != null
+                        && (root = apiToTree(new URI(apiUrl))) != null);
+                library.markModified(p);
+            }
+        } catch (URISyntaxException e) {
+            throw new SpotifyAPIResponseException(e);
         }
         progressTracker.updateProgress(100);
     }
 
     public synchronized void populateSavedTracks(ProgressTracker progressTracker)
-    throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         String apiUrl = "https://api.spotify.com/v1/me/tracks?limit=50";
         JsonNode root;
@@ -109,26 +113,30 @@ public class SpotifyClient
         SavedResourceCollection<Track> ls = library.getLikedSongs();
 
         ls.clearResources();
-        do {
-            root = apiToTree(new URI(apiUrl));
-            if (size == 0) {
-                if ((size = root.get("total").asInt(0)) == 0) {
-                    break;
+        try {
+            do {
+                root = apiToTree(new URI(apiUrl));
+                if (size == 0) {
+                    if ((size = root.get("total").asInt(0)) == 0) {
+                        break;
+                    }
                 }
-            }
-            if ((items = root.get("items")) != null) {
-                treeToSavedTrackCollection(items, ls);
-                progress += (float) items.size() / size * 100;
-                progressTracker.updateProgress((int) progress);
-            }
-            apiUrl = (root = root.get("next")) != null ? root.asText(null) : null;
-        } while (apiUrl != null);
+                if ((items = root.get("items")) != null) {
+                    treeToSavedTrackCollection(items, ls);
+                    progress += (float) items.size() / size * 100;
+                    progressTracker.updateProgress((int) progress);
+                }
+                apiUrl = (root = root.get("next")) != null ? root.asText(null) : null;
+            } while (apiUrl != null);
+        } catch (URISyntaxException e) {
+            throw new SpotifyAPIResponseException(e);
+        }
         library.markModified(ls);
         progressTracker.updateProgress(100);
     }
 
     public synchronized void populateSavedAlbums(ProgressTracker progressTracker)
-    throws IOException, SpotifyAuthenticationException, SpotifyClientHttpException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         String apiUrl = "https://api.spotify.com/v1/me/albums?limit=50";
         JsonNode root;
@@ -138,24 +146,28 @@ public class SpotifyClient
         progressTracker.updateProgress(0);
 
         library.clearSavedAlbums();
-        do {
-            root = apiToTree(new URI(apiUrl));
-            if (size == 0) {
-                if ((size = root.get("total").asInt(0)) == 0) {
-                    break;
+        try {
+            do {
+                root = apiToTree(new URI(apiUrl));
+                if (size == 0) {
+                    if ((size = root.get("total").asInt(0)) == 0) {
+                        break;
+                    }
                 }
-            }
-            items = root.get("items");
-            if (items != null && items.isArray()) {
-                for (JsonNode savedAlbumNode : items) {
-                    library.saveAlbum(ZonedDateTime.parse(savedAlbumNode.get("added_at").asText()),
-                            treeToAlbum(savedAlbumNode.get("album"), true));
+                items = root.get("items");
+                if (items != null && items.isArray()) {
+                    for (JsonNode savedAlbumNode : items) {
+                        library.saveAlbum(ZonedDateTime.parse(savedAlbumNode.get("added_at").asText()),
+                                treeToAlbum(savedAlbumNode.get("album"), true));
+                    }
+                    progress += (float) items.size() / size * 100;
+                    progressTracker.updateProgress((int) progress);
                 }
-                progress += (float) items.size() / size * 100;
-                progressTracker.updateProgress((int) progress);
-            }
-            apiUrl = (root = root.get("next")) != null ? root.asText(null) : null;
-        } while (apiUrl != null);
+                apiUrl = (root = root.get("next")) != null ? root.asText(null) : null;
+            } while (apiUrl != null);
+        } catch (URISyntaxException e) {
+            throw new SpotifyAPIResponseException(e);
+        }
         progressTracker.updateProgress(100);
     }
 
@@ -166,7 +178,7 @@ public class SpotifyClient
      * @throws SpotifyClientHttpException if there is an unexpected HTTP error when communicating with Spotify
      */
     public synchronized Set<Playlist> updateMyPlaylists(ProgressTracker progressTracker)
-    throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         JsonNode items;
         JsonNode root;
@@ -176,32 +188,40 @@ public class SpotifyClient
         int size = 0;
         float progress = 0;
         progressTracker.updateProgress(0);
-        do {
-            root = apiToTree(new URI(nextUrl));
-            if (size == 0) {
-                if ((size = root.get("total").asInt(0)) == 0) {
-                    break;
+        try {
+            do {
+                root = apiToTree(new URI(nextUrl));
+                if (size == 0) {
+                    if ((size = root.get("total").asInt(0)) == 0) {
+                        break;
+                    }
                 }
-            }
-            items = root.get("items");
+                items = root.get("items");
 
-            if (items != null && items.isArray()) {
-                for (JsonNode node : items) {
-                    deleted.remove(treeToPlaylist(node));
+                if (items != null && items.isArray()) {
+                    for (JsonNode node : items) {
+                        deleted.remove(treeToPlaylist(node));
+                    }
+                    progress += (float) items.size() / size * 100;
+                    progressTracker.updateProgress((int) progress);
                 }
-                progress += (float) items.size() / size * 100;
-                progressTracker.updateProgress((int) progress);
-            }
-            nextUrl = (root = root.get("next")) != null ? root.asText(null) : null;
-        } while (nextUrl != null);
+                nextUrl = (root = root.get("next")) != null ? root.asText(null) : null;
+            } while (nextUrl != null);
+        } catch (URISyntaxException e) {
+            throw new SpotifyAPIResponseException(e);
+        }
         progressTracker.updateProgress(100);
         return deleted;
     }
 
     public synchronized void updateAudioFeaturesForTrack(Track track)
-    throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
-        treeToAudioFeatures(apiToTree(new URI("https://api.spotify.com/v1/audio-features/" + track.getId())));
+        try {
+            treeToAudioFeatures(apiToTree(new URI("https://api.spotify.com/v1/audio-features/" + track.getId())));
+        } catch (URISyntaxException e) {
+            throw new SpotifyAPIResponseException(e);
+        }
     }
 
     /**
@@ -211,7 +231,7 @@ public class SpotifyClient
      * @throws SpotifyClientHttpException if there is an unexpected HTTP error when communicating with Spotify
      */
     public synchronized void updateAudioFeaturesForTracks(Collection<Track> tracks, ProgressTracker progressTracker)
-    throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         Iterator<Track> it = tracks.iterator();
         JsonNode audioFeatures;
@@ -230,7 +250,11 @@ public class SpotifyClient
             if (workingIds.isEmpty()) {
                 break;
             } else {
-                audioFeatures = apiToTree(new URI("https://api.spotify.com/v1/audio-features?ids=" + String.join(",", workingIds))).get("audio_features");
+                try {
+                    audioFeatures = apiToTree(new URI("https://api.spotify.com/v1/audio-features?ids=" + String.join(",", workingIds))).get("audio_features");
+                } catch (URISyntaxException e) {
+                    throw new SpotifyAPIResponseException(e);
+                }
                 if (audioFeatures.isArray()) {
                     for (JsonNode node : audioFeatures) {
                         treeToAudioFeatures(node);
@@ -245,7 +269,7 @@ public class SpotifyClient
     }
 
     public synchronized void updateTracks(Collection<Track> tracks, ProgressTracker progressTracker)
-    throws IOException, SpotifyAuthenticationException, SpotifyClientHttpException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         Iterator<Track> it = tracks.iterator();
         JsonNode tracksNode;
@@ -264,11 +288,15 @@ public class SpotifyClient
             if (workingIds.isEmpty()) {
                 break;
             } else {
-                tracksNode = apiToTree(new URI("https://api.spotify.com/v1/tracks?ids=" + String.join(",", workingIds))).get("tracks");
-                if (tracksNode.isArray()) {
-                    for (JsonNode trackNode : tracksNode) {
-                        treeToTrack(trackNode, true, null);
+                try {
+                    tracksNode = apiToTree(new URI("https://api.spotify.com/v1/tracks?ids=" + String.join(",", workingIds))).get("tracks");
+                    if (tracksNode.isArray()) {
+                        for (JsonNode trackNode : tracksNode) {
+                            treeToTrack(trackNode, true, null);
+                        }
                     }
+                } catch (URISyntaxException e) {
+                    throw new SpotifyAPIResponseException(e);
                 }
                 progress += (float) workingIds.size() / size * 100;
                 progressTracker.updateProgress((int) progress);
@@ -279,19 +307,27 @@ public class SpotifyClient
     }
 
     public synchronized void updateTrack(Track track)
-    throws SpotifyAuthenticationException, IOException, SpotifyClientHttpException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
-        treeToTrack(apiToTree(new URI("https://api.spotify.com/v1/tracks/" + track.getId())), true, null);
+        try {
+            treeToTrack(apiToTree(new URI("https://api.spotify.com/v1/tracks/" + track.getId())), true, null);
+        } catch (URISyntaxException e) {
+            throw new SpotifyAPIResponseException(e);
+        }
     }
 
     public synchronized void updateArtist(Artist artist)
-    throws SpotifyAuthenticationException, IOException, SpotifyClientHttpException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
-        treeToArtist(apiToTree(new URI("https://api.spotify.com/v1/artists/" + artist.getId())), true);
+        try {
+            treeToArtist(apiToTree(new URI("https://api.spotify.com/v1/artists/" + artist.getId())), true);
+        } catch (URISyntaxException e) {
+            throw new SpotifyAPIResponseException(e);
+        }
     }
 
     public synchronized void updateArtists(Collection<Artist> artists, ProgressTracker progressTracker)
-    throws SpotifyAuthenticationException, IOException, SpotifyClientHttpException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         Iterator<Artist> it = artists.iterator();
         Set<String> workingIds = new HashSet<>();
@@ -310,7 +346,11 @@ public class SpotifyClient
             if (workingIds.isEmpty()) {
                 break;
             } else {
-                artistsNode = apiToTree(new URI("https://api.spotify.com/v1/artists?ids=" + String.join(",", workingIds))).get("artists");
+                try {
+                    artistsNode = apiToTree(new URI("https://api.spotify.com/v1/artists?ids=" + String.join(",", workingIds))).get("artists");
+                } catch (URISyntaxException e) {
+                    throw new SpotifyAPIResponseException(e);
+                }
                 if (artistsNode.isArray()) {
                     for (JsonNode node : artistsNode) {
                         treeToArtist(node, true);
@@ -325,13 +365,17 @@ public class SpotifyClient
     }
 
     public synchronized void updateAlbum(Album album)
-    throws SpotifyAuthenticationException, IOException, SpotifyClientHttpException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
-        treeToAlbum(apiToTree(new URI("https://api.spotify.com/v1/albums/" + album.getId())), true);
+        try {
+            treeToAlbum(apiToTree(new URI("https://api.spotify.com/v1/albums/" + album.getId())), true);
+        } catch (URISyntaxException e) {
+            throw new SpotifyAPIResponseException(e);
+        }
     }
 
     public synchronized void updateAlbums(Collection<Album> albums, ProgressTracker progressTracker)
-    throws SpotifyAuthenticationException, IOException, SpotifyClientHttpException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         Iterator<Album> it = albums.iterator();
         Set<String> workingIds = new HashSet<>();
@@ -350,11 +394,15 @@ public class SpotifyClient
             if (workingIds.isEmpty()) {
                 break;
             } else {
-                albumsNode = apiToTree(new URI("https://api.spotify.com/v1/albums?ids=" + String.join(",", workingIds))).get("albums");
-                if (albumsNode.isArray()) {
-                    for (JsonNode node : albumsNode) {
-                        treeToAlbum(node, true);
+                try {
+                    albumsNode = apiToTree(new URI("https://api.spotify.com/v1/albums?ids=" + String.join(",", workingIds))).get("albums");
+                    if (albumsNode.isArray()) {
+                        for (JsonNode node : albumsNode) {
+                            treeToAlbum(node, true);
+                        }
                     }
+                } catch (URISyntaxException e) {
+                    throw new SpotifyAPIResponseException(e);
                 }
                 progress += (float) workingIds.size() / size * 100;
                 progressTracker.updateProgress((int) progress);
@@ -449,18 +497,22 @@ public class SpotifyClient
     }
 
     private synchronized Track[] treeToAlbumTracks(JsonNode tracksNode, Album a)
-    throws IOException, SpotifyAuthenticationException, SpotifyClientHttpException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         if (tracksNode != null) {
             Track[] tracks = new Track[tracksNode.get("total").asInt(0)];
             int i = 0;
             String apiUrl = null;
             do {
-                if (apiUrl != null) {
-                    tracksNode = apiToTree(new URI(apiUrl));
-                }
-                for (JsonNode trackListNode : tracksNode.get("items")) {
-                    tracks[i++] = treeToTrack(trackListNode, false, a);
+                try {
+                    if (apiUrl != null) {
+                        tracksNode = apiToTree(new URI(apiUrl));
+                    }
+                    for (JsonNode trackListNode : tracksNode.get("items")) {
+                        tracks[i++] = treeToTrack(trackListNode, false, a);
+                    }
+                } catch (URISyntaxException e) {
+                    throw new SpotifyAPIResponseException(e);
                 }
                 apiUrl = (tracksNode = tracksNode.get("next")) != null ? tracksNode.asText(null) : null;
             } while (apiUrl != null);
@@ -472,7 +524,7 @@ public class SpotifyClient
     }
 
     private synchronized Album treeToAlbum(JsonNode albumNode, boolean shouldUpdate)
-    throws IOException, SpotifyAuthenticationException, SpotifyClientHttpException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         if (albumNode == null) return null;
         Album a = library.albumOf(albumNode.get("id").asText());
@@ -512,7 +564,7 @@ public class SpotifyClient
      * @throws JsonProcessingException on JSON errors
      */
     private synchronized Track treeToTrack(JsonNode trackNode, boolean shouldUpdate, Album album)
-    throws IOException, SpotifyAuthenticationException, SpotifyClientHttpException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         if (trackNode == null || (trackNode.has("is_local") && trackNode.get("is_local").asBoolean(false))
                 || !trackNode.has("id")) return null;
@@ -555,7 +607,7 @@ public class SpotifyClient
      * @throws JsonProcessingException on JSON errors
      */
     private synchronized void treeToSavedTrackCollection(JsonNode items, SavedResourceCollection<Track> c)
-    throws IOException, SpotifyAuthenticationException, SpotifyClientHttpException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         if (items == null) return;
         if (items.isArray()) {
@@ -591,7 +643,7 @@ public class SpotifyClient
     }
 
     private JsonNode apiToTree(URI apiUrl)
-    throws IOException, SpotifyAuthenticationException, SpotifyClientHttpException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         try (BufferedReader reader = getAPIReader(apiUrl)) {
             return mapper.readTree(reader);

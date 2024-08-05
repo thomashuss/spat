@@ -9,8 +9,8 @@ import javax.swing.table.AbstractTableModel;
 abstract class SavedResourceTableModel<T extends SpotifyResource>
         extends AbstractTableModel
 {
-    public final int NAME_COL = 0;
     protected static final String[] COL_NAMES = {"Name", "Saved At"};
+    public final int NAME_COL = 0;
     protected final MainGUI main;
     protected final SavedResourceCollection<T> collection;
     private boolean updating = false;

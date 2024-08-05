@@ -85,7 +85,7 @@ abstract class SpotifyHttpClient
     }
 
     private BufferedReader getConnectionReader(URI targetUri)
-    throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         URL target = targetUri.toURL();
         HttpsURLConnection con;
@@ -139,7 +139,7 @@ abstract class SpotifyHttpClient
      * @throws SpotifyClientHttpException if there is an unexpected HTTP error when communicating with Spotify
      */
     BufferedReader getAPIReader(URI target)
-    throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         refreshAccessToken();
         return getConnectionReader(target);
@@ -154,7 +154,7 @@ abstract class SpotifyHttpClient
      * @throws SpotifyClientHttpException if there is an unexpected HTTP error when communicating with Spotify
      */
     BufferedReader getAPIReader(URI target, String data)
-    throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         refreshAccessToken();
         return getConnectionReader(target, data, true);
@@ -193,10 +193,12 @@ abstract class SpotifyHttpClient
     throws IOException;
 
     private void refreshAccessToken(String out)
-    throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException, URISyntaxException
+    throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException, SpotifyAPIResponseException
     {
         try (BufferedReader reader = getConnectionReader(new URI(SPOTIFY_TOKEN_URL), out, false)) {
             token = parseToken(reader);
+        } catch (URISyntaxException e) {
+            throw new SpotifyAPIResponseException(e);
         }
 
         if (!(new HashSet<>(Arrays.asList(token.scope.split(" ")))).equals(SCOPE_SET)) {
@@ -207,7 +209,7 @@ abstract class SpotifyHttpClient
     }
 
     public void loginCallback(URI callback)
-    throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         Map<String, String> req = decodeQuery(callback);
         if (!req.containsKey("state") || !req.get("state").equals(loginState)) {
@@ -221,7 +223,7 @@ abstract class SpotifyHttpClient
     }
 
     private void refreshAccessToken()
-    throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException, SpotifyClientStateException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         if (token == null) {
             throw new SpotifyClientStateException("No Spotify access token exists.");

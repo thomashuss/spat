@@ -1,12 +1,9 @@
 package io.github.thomashuss.spat.gui;
 
 import io.github.thomashuss.spat.client.APILongFunction;
-import io.github.thomashuss.spat.client.SpotifyAuthenticationException;
-import io.github.thomashuss.spat.client.SpotifyClientHttpException;
-import io.github.thomashuss.spat.client.SpotifyClientStateException;
+import io.github.thomashuss.spat.client.SpotifyClientException;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 
 class APILongFunctionWorker<T>
         extends APIWorker<Void>
@@ -23,7 +20,7 @@ class APILongFunctionWorker<T>
 
     @Override
     protected Void doTask()
-    throws SpotifyAuthenticationException, SpotifyClientHttpException, SpotifyClientStateException, IOException, URISyntaxException
+    throws IOException, SpotifyClientException
     {
         task.apply(t, this);
         return null;
