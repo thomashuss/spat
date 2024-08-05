@@ -35,7 +35,11 @@ class SavedTrackCollectionFrame
         super(main, collection instanceof Playlist ? collection.getName() : "Saved Tracks");
         main.library.populateSavedResources(collection);
         this.collection = collection;
-        model = new SavedTrackTableModel(main, collection);
+        if (collection instanceof Playlist p) {
+            model = new PlaylistTrackTableModel(main, p);
+        } else {
+            model = new SavedTrackTableModel(main, collection);
+        }
         table = new JTable(model);
         InputMap inputMap = getInputMap();
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0), "navigateList");

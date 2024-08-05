@@ -11,6 +11,8 @@ public class Playlist
 {
     @JsonIgnore
     private final String id;
+    @JsonIgnore
+    private String snapshotId;
 
     Playlist(String id)
     {
@@ -28,6 +30,16 @@ public class Playlist
     public String getId()
     {
         return id;
+    }
+
+    public String getSnapshotId()
+    {
+        return snapshotId;
+    }
+
+    public void setSnapshotId(String snapshotId)
+    {
+        this.snapshotId = snapshotId;
     }
 
     @Override

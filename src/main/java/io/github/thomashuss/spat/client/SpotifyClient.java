@@ -60,16 +60,8 @@ public class SpotifyClient
         this.library = library;
     }
 
-    /**
-     * Populates the provided <code>SavedResourceCollection</code> of <code>Track</code>s,
-     * consequently doing the same for <code>Track</code>s and <code>Artist</code>s which appear within.
-     *
-     * @param c to populate
-     * @throws IOException                on I/O errors
-     * @throws SpotifyClientHttpException if there is an unexpected HTTP error when communicating with Spotify
-     */
-    public synchronized void populateSavedTrackCollection(SavedResourceCollection<Track> c,
-                                                          ProgressTracker progressTracker)
+    public synchronized void populatePlaylist(Playlist p,
+                                              ProgressTracker progressTracker)
     throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException, SpotifyClientStateException, URISyntaxException
     {
         String apiUrl;
@@ -79,24 +71,59 @@ public class SpotifyClient
         float progress = 0;
         progressTracker.updateProgress(0);
 
-        if (c instanceof Playlist) {
-            apiUrl = "https://api.spotify.com/v1/playlists/" + ((Playlist) c).getId() + "/tracks?limit=50";
-        } else {
-            // There is only one saved track collection in Spotify's model that is not a playlist.
-            apiUrl = "https://api.spotify.com/v1/me/tracks?limit=50";
+        apiUrl = "https://api.spotify.com/v1/playlists/" + p.getId();
+        root = apiToTree(new URI(apiUrl));
+        p.setSnapshotId(root.get("snapshot_id").asText());
+
+        root = root.get("tracks");
+        if (root != null) {
+            p.clearResources();
+            do {
+                if (size == 0) {
+                    if ((size = root.get("total").asInt(0)) == 0) {
+                        break;
+                    }
+                }
+                if ((items = root.get("items")) != null) {
+                    treeToSavedTrackCollection(items, p);
+                    progress += (float) items.size() / size * 100;
+                    progressTracker.updateProgress((int) progress);
+                }
+            } while ((root = root.get("next")) != null
+                    && (apiUrl = root.asText(null)) != null
+                    && (root = apiToTree(new URI(apiUrl))) != null);
+            library.markModified(p);
         }
-        c.clearResources();
+        progressTracker.updateProgress(100);
+    }
+
+    public synchronized void populateSavedTracks(ProgressTracker progressTracker)
+    throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException, SpotifyClientStateException, URISyntaxException
+    {
+        String apiUrl = "https://api.spotify.com/v1/me/tracks?limit=50";
+        JsonNode root;
+        JsonNode items;
+        int size = 0;
+        float progress = 0;
+        progressTracker.updateProgress(0);
+        SavedResourceCollection<Track> ls = library.getLikedSongs();
+
+        ls.clearResources();
         do {
             root = apiToTree(new URI(apiUrl));
-            if (size == 0) size = root.get("total").asInt(0);
+            if (size == 0) {
+                if ((size = root.get("total").asInt(0)) == 0) {
+                    break;
+                }
+            }
             if ((items = root.get("items")) != null) {
-                treeToSavedTrackCollection(items, c);
+                treeToSavedTrackCollection(items, ls);
                 progress += (float) items.size() / size * 100;
                 progressTracker.updateProgress((int) progress);
             }
             apiUrl = (root = root.get("next")) != null ? root.asText(null) : null;
         } while (apiUrl != null);
-        library.markModified(c);
+        library.markModified(ls);
         progressTracker.updateProgress(100);
     }
 
@@ -151,7 +178,11 @@ public class SpotifyClient
         progressTracker.updateProgress(0);
         do {
             root = apiToTree(new URI(nextUrl));
-            if (size == 0) size = root.get("total").asInt(0);
+            if (size == 0) {
+                if ((size = root.get("total").asInt(0)) == 0) {
+                    break;
+                }
+            }
             items = root.get("items");
 
             if (items != null && items.isArray()) {
@@ -468,8 +499,7 @@ public class SpotifyClient
     private synchronized Label treeToLabel(JsonNode node)
     {
         if (node != null && node.isTextual()) {
-            Label l = library.labelOf(node.asText());
-            return l;
+            return library.labelOf(node.asText());
         }
         return null;
     }

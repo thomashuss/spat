@@ -1,17 +1,16 @@
 package io.github.thomashuss.spat.gui;
 
-import io.github.thomashuss.spat.client.APILongFunction;
 import io.github.thomashuss.spat.library.SavedResource;
 import io.github.thomashuss.spat.library.SavedResourceCollection;
 import io.github.thomashuss.spat.library.SpotifyResource;
 
 import javax.swing.table.AbstractTableModel;
 
-class SavedResourceTableModel<T extends SpotifyResource>
+abstract class SavedResourceTableModel<T extends SpotifyResource>
         extends AbstractTableModel
 {
     public final int NAME_COL = 0;
-    public final String[] COL_NAMES = {"Name", "Saved At"};
+    protected static final String[] COL_NAMES = {"Name", "Saved At"};
     protected final MainGUI main;
     protected final SavedResourceCollection<T> collection;
     private boolean updating = false;
@@ -23,7 +22,7 @@ class SavedResourceTableModel<T extends SpotifyResource>
     }
 
     @Override
-    public int getRowCount()
+    public final int getRowCount()
     {
         return updating ? 0 : collection.getNumResources();
     }
@@ -40,7 +39,7 @@ class SavedResourceTableModel<T extends SpotifyResource>
         return col == NAME_COL ? collection.getSavedResourceAt(row).getResource().getName() : collection.getSavedResourceAt(row).addedAt();
     }
 
-    public SavedResource<T> get(int i)
+    public final SavedResource<T> get(int i)
     {
         return collection.getSavedResourceAt(i);
     }
@@ -51,22 +50,20 @@ class SavedResourceTableModel<T extends SpotifyResource>
         return COL_NAMES[col];
     }
 
-    protected void populate(APILongFunction<SavedResourceCollection<T>> func)
+    abstract protected void populate();
+
+    protected final void prePopulate()
     {
         if (!collection.isEmpty())
             fireTableRowsDeleted(0, collection.getNumResources() - 1);
         updating = true;
-        new APILongFunctionWorker<>(main, func, collection)
-        {
-            @Override
-            protected void onTaskSuccess(Void v)
-            {
-                super.onTaskSuccess(v);
-                updating = false;
-                synchronized (main.client) {
-                    fireTableDataChanged();
-                }
-            }
-        }.execute();
+    }
+
+    protected final void onTaskSuccess()
+    {
+        updating = false;
+        synchronized (main.client) {
+            fireTableDataChanged();
+        }
     }
 }
