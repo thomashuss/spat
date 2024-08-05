@@ -5,6 +5,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -34,7 +35,14 @@ abstract class SpotifyHttpClient
     private static final String API_SCOPE = "playlist-read-private playlist-read-collaborative playlist-modify-private playlist-modify-public user-library-modify user-library-read";
     private static final Set<String> SCOPE_SET = new HashSet<>(Arrays.asList(API_SCOPE.split(" ")));
     private static final String PKCE_POSSIBLE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    private static final String SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
+    private static final URL SPOTIFY_TOKEN_URL;
+    static {
+        try {
+            SPOTIFY_TOKEN_URL = new URI("https://accounts.spotify.com/api/token").toURL();
+        } catch (URISyntaxException | MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+    }
     private static final int PKCE_CODE_LENGTH = 64;
     private final Base64.Encoder b64Encoder;
     private final MessageDigest digest;
@@ -84,10 +92,9 @@ abstract class SpotifyHttpClient
         this.token = token;
     }
 
-    private BufferedReader getConnectionReader(URI targetUri)
+    private BufferedReader getConnectionReader(URL target)
     throws IOException, SpotifyClientException
     {
-        URL target = targetUri.toURL();
         HttpsURLConnection con;
         int code;
 
@@ -104,10 +111,9 @@ abstract class SpotifyHttpClient
         }
     }
 
-    private BufferedReader getConnectionReader(URI targetUri, String data, boolean shouldAuthenticate)
+    private BufferedReader getConnectionReader(URL target, String data, boolean shouldAuthenticate)
     throws IOException, SpotifyClientHttpException
     {
-        URL target = targetUri.toURL();
         int responseCode;
         HttpsURLConnection con = (HttpsURLConnection) target.openConnection();
 
@@ -142,7 +148,7 @@ abstract class SpotifyHttpClient
     throws IOException, SpotifyClientException
     {
         refreshAccessToken();
-        return getConnectionReader(target);
+        return getConnectionReader(target.toURL());
     }
 
     /**
@@ -157,7 +163,7 @@ abstract class SpotifyHttpClient
     throws IOException, SpotifyClientException
     {
         refreshAccessToken();
-        return getConnectionReader(target, data, true);
+        return getConnectionReader(target.toURL(), data, true);
     }
 
     private String pkceCodeGenerate()
@@ -193,12 +199,10 @@ abstract class SpotifyHttpClient
     throws IOException;
 
     private void refreshAccessToken(String out)
-    throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException, SpotifyAPIResponseException
+    throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException
     {
-        try (BufferedReader reader = getConnectionReader(new URI(SPOTIFY_TOKEN_URL), out, false)) {
+        try (BufferedReader reader = getConnectionReader(SPOTIFY_TOKEN_URL, out, false)) {
             token = parseToken(reader);
-        } catch (URISyntaxException e) {
-            throw new SpotifyAPIResponseException(e);
         }
 
         if (!(new HashSet<>(Arrays.asList(token.scope.split(" ")))).equals(SCOPE_SET)) {
