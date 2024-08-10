@@ -36,6 +36,7 @@ abstract class SpotifyHttpClient
     private static final Set<String> SCOPE_SET = new HashSet<>(Arrays.asList(API_SCOPE.split(" ")));
     private static final String PKCE_POSSIBLE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final URL SPOTIFY_TOKEN_URL;
+
     static {
         try {
             SPOTIFY_TOKEN_URL = new URI("https://accounts.spotify.com/api/token").toURL();
@@ -43,6 +44,7 @@ abstract class SpotifyHttpClient
             throw new RuntimeException(e);
         }
     }
+
     private static final int PKCE_CODE_LENGTH = 64;
     private final Base64.Encoder b64Encoder;
     private final MessageDigest digest;
@@ -111,25 +113,27 @@ abstract class SpotifyHttpClient
         }
     }
 
-    private BufferedReader getConnectionReader(URL target, String data, boolean shouldAuthenticate)
+    private BufferedReader getConnectionReader(URL target, String method, String data,
+                                               String type, boolean shouldAuthenticate)
     throws IOException, SpotifyClientHttpException
     {
         int responseCode;
         HttpsURLConnection con = (HttpsURLConnection) target.openConnection();
 
-        con.setRequestMethod("POST");
+        con.setRequestMethod(method);
         if (shouldAuthenticate) {
             con.setRequestProperty("Authorization", token.accessAuthorization);
         }
         con.setRequestProperty("Content-Length", Integer.toString(data.getBytes().length));
-        con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+        con.setRequestProperty("Content-Type", type);
         con.setDoOutput(true);
         try (OutputStreamWriter writer = new OutputStreamWriter(con.getOutputStream())) {
             writer.write(data);
         }
 
         responseCode = con.getResponseCode();
-        if (responseCode == HttpsURLConnection.HTTP_OK) {
+        if (responseCode == HttpsURLConnection.HTTP_OK || responseCode == HttpsURLConnection.HTTP_CREATED
+                || responseCode == HttpsURLConnection.HTTP_ACCEPTED) {
             return new BufferedReader(new InputStreamReader(con.getInputStream()));
         } else {
             throw new SpotifyClientHttpException(responseCode);
@@ -151,6 +155,20 @@ abstract class SpotifyHttpClient
         return getConnectionReader(target.toURL());
     }
 
+    BufferedReader getAPIReader(URI target, String method, String data)
+    throws IOException, SpotifyClientException
+    {
+        refreshAccessToken();
+        return getConnectionReader(target.toURL(), method, data, "application/json", true);
+    }
+
+    BufferedReader getAPIReader(URL target, String method, String data)
+    throws IOException, SpotifyClientException
+    {
+        refreshAccessToken();
+        return getConnectionReader(target, method, data, "application/json", true);
+    }
+
     /**
      * Sends a POST request to Spotify and creates a BufferedReader from the response.
      *
@@ -162,8 +180,21 @@ abstract class SpotifyHttpClient
     BufferedReader getAPIReader(URI target, String data)
     throws IOException, SpotifyClientException
     {
-        refreshAccessToken();
-        return getConnectionReader(target.toURL(), data, true);
+        return getAPIReader(target, "POST", data);
+    }
+
+    /**
+     * Sends a POST request to Spotify and creates a BufferedReader from the response.
+     *
+     * @param target URL of Spotify object
+     * @return BufferedReader of JSON output from Spotify
+     * @throws IOException                on I/O errors
+     * @throws SpotifyClientHttpException if there is an unexpected HTTP error when communicating with Spotify
+     */
+    BufferedReader getAPIReader(URL target, String data)
+    throws IOException, SpotifyClientException
+    {
+        return getAPIReader(target, "POST", data);
     }
 
     private String pkceCodeGenerate()
@@ -201,7 +232,8 @@ abstract class SpotifyHttpClient
     private void refreshAccessToken(String out)
     throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException
     {
-        try (BufferedReader reader = getConnectionReader(SPOTIFY_TOKEN_URL, out, false)) {
+        try (BufferedReader reader = getConnectionReader(SPOTIFY_TOKEN_URL, "POST", out,
+                "application/x-www-form-urlencoded", false)) {
             token = parseToken(reader);
         }
 

@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.util.Set;
 
 class APICollectionMutatorWorker<T extends LibraryResource>
-        extends APIWorker<Set<T>>
+        extends APIWorker<Set<T>, Void>
 {
     private final APICollectionMutator<T> task;
 

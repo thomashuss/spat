@@ -33,6 +33,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -214,9 +215,38 @@ public class Library
         if (album != null) savedAlbums.addResource(new SavedAlbum(addedAt, album));
     }
 
+    public void saveTracksToCollection(List<Track> tracks, ZonedDateTime addedAt,
+                                       SavedResourceCollection<Track> collection)
+    {
+        collection.addResources(tracks.stream().map((t) -> new SavedTrack(addedAt, t))
+                .collect(Collectors.toUnmodifiableList()));
+    }
+
+    public void saveTracksToCollection(List<Track> tracks, ZonedDateTime addedAt,
+                                       SavedResourceCollection<Track> collection, int i)
+    {
+        collection.addResourcesAt(tracks.stream().map((t) -> new SavedTrack(addedAt, t))
+                .collect(Collectors.toUnmodifiableList()), i);
+    }
+
     public void saveTrackToCollection(Track track, ZonedDateTime addedAt, SavedResourceCollection<Track> collection)
     {
         if (track != null) collection.addResource(new SavedTrack(addedAt, track));
+    }
+
+    public void saveTrackToCollection(SavedTrack sr, SavedResourceCollection<Track> collection)
+    {
+        if (sr != null) collection.addResource(sr);
+    }
+
+    public void saveTrackToCollection(Track track, ZonedDateTime addedAt, SavedResourceCollection<Track> collection, int i)
+    {
+        if (track != null) collection.addResourceAt(new SavedTrack(addedAt, track), i);
+    }
+
+    public void saveTrackToCollection(SavedTrack sr, SavedResourceCollection<Track> collection, int i)
+    {
+        if (sr != null) collection.addResourceAt(sr, i);
     }
 
     public void unsaveAlbum(Album album)

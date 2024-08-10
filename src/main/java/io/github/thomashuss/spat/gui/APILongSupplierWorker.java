@@ -6,7 +6,7 @@ import io.github.thomashuss.spat.client.SpotifyClientException;
 import java.io.IOException;
 
 class APILongSupplierWorker
-        extends APIWorker<Void>
+        extends APIWorker<Void, Void>
 {
     private final APILongSupplier task;
 

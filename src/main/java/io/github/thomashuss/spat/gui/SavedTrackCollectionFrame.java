@@ -6,7 +6,9 @@ import io.github.thomashuss.spat.library.SavedResourceCollection;
 import io.github.thomashuss.spat.library.Track;
 
 import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
 import javax.swing.BoxLayout;
+import javax.swing.DropMode;
 import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -25,10 +27,12 @@ import java.awt.event.KeyEvent;
 class SavedTrackCollectionFrame
         extends ResourceFrame
 {
-    private static final Dimension DIMENSION = new Dimension(600, 300);
-    private final SavedResourceCollection<Track> collection;
-    private final SavedTrackTableModel model;
+    private static final Object NAVIGATE_LIST = new Object();
+    private static final Object DELETE_ENTRIES = new Object();
+    final SavedTrackTableModel model;
     private final JTable table;
+    private final SavedResourceCollection<Track> collection;
+    private static final Dimension DIMENSION = new Dimension(600, 300);
 
     public SavedTrackCollectionFrame(MainGUI main, SavedResourceCollection<Track> collection)
     {
@@ -41,12 +45,17 @@ class SavedTrackCollectionFrame
             model = new SavedTrackTableModel(main, collection);
         }
         table = new JTable(model);
+        table.setDragEnabled(true);
+        table.setDropMode(DropMode.INSERT_ROWS);
+        table.setTransferHandler(model.getTransferHandler());
+
         InputMap inputMap = getInputMap();
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0), "navigateList");
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0), "navigateList");
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0), "navigateList");
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), "navigateList");
-        getActionMap().put("navigateList", new AbstractAction()
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0), NAVIGATE_LIST);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0), NAVIGATE_LIST);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0), NAVIGATE_LIST);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), NAVIGATE_LIST);
+        ActionMap actionMap = getActionMap();
+        actionMap.put(NAVIGATE_LIST, new AbstractAction()
         {
             @Override
             public void actionPerformed(ActionEvent actionEvent)
@@ -57,6 +66,16 @@ class SavedTrackCollectionFrame
                 }
             }
         });
+        table.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), DELETE_ENTRIES);
+        table.getActionMap().put(DELETE_ENTRIES, new AbstractAction()
+        {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent)
+            {
+                model.deleteEntries(table.getSelectedRow(), table.getSelectedRowCount());
+            }
+        });
+
         final JButton updateButton = new APIButton("Refresh");
         updateButton.addActionListener(actionEvent -> model.populate());
         final JButton openButton = new JButton("Open");
@@ -65,7 +84,7 @@ class SavedTrackCollectionFrame
 
         table.setPreferredScrollableViewportSize(new Dimension(500, 70));
         table.setFillsViewportHeight(true);
-        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
         table.setShowHorizontalLines(false);
         table.setShowVerticalLines(false);
         table.addMouseListener(new OpenClickAdapter(openButton));

@@ -56,6 +56,7 @@ abstract class SavedResourceTableModel<T extends SpotifyResource>
     {
         if (!collection.isEmpty())
             fireTableRowsDeleted(0, collection.getNumResources() - 1);
+        main.abandonEditsFor(collection);
         updating = true;
     }
 

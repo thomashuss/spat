@@ -6,7 +6,7 @@ import io.github.thomashuss.spat.client.SpotifyClientException;
 import java.io.IOException;
 
 class APIFunctionWorker<T>
-        extends APIWorker<Void>
+        extends APIWorker<Void, Void>
 {
     protected final T t;
     private final APIFunction<T> task;

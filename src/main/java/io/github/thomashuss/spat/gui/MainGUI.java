@@ -3,9 +3,13 @@ package io.github.thomashuss.spat.gui;
 import io.github.thomashuss.spat.Spat;
 import io.github.thomashuss.spat.client.SpotifyClient;
 import io.github.thomashuss.spat.library.Library;
+import io.github.thomashuss.spat.library.LibraryResource;
 import io.github.thomashuss.spat.library.SaveDirectory;
 import io.github.thomashuss.spat.library.SaveFileException;
+import io.github.thomashuss.spat.library.SavedResourceCollection;
 import io.github.thomashuss.spat.library.Track;
+import io.github.thomashuss.spat.tracker.Edit;
+import io.github.thomashuss.spat.tracker.EditTracker;
 import javazoom.jl.player.Player;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -26,6 +30,8 @@ import javax.swing.WindowConstants;
 import javax.swing.event.InternalFrameAdapter;
 import javax.swing.event.InternalFrameEvent;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -42,6 +48,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -60,21 +69,30 @@ public class MainGUI
      * Synchronize library operations on this object.
      */
     final SpotifyClient client;
+    final EditTracker editTracker;
     private final Desktop desktop;
+    private final JInternalFrame statusFrame;
     private final JProgressBar statusProgressBar;
     private final PropertyChangeSupport statePcs;
     Library library;
+    private Deque<Component> disabledComponents;
     private File saveDirectory;
     private FrameCheckbox playlistsCheckbox;
+    private JMenuItem undoItem;
+    private JMenuItem redoItem;
+    private JMenuItem syncItem;
     private JFileChooser chooser;
     private LoginFrame loginFrame;
     private PreviewWorker previewWorker;
+    private EditPushFrame pushFrame;
+    private InternalFrameAdapter pushDoneListener;
 
     public MainGUI()
     {
         super(Spat.PROGRAM_NAME);
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         client = new SpotifyClient();
+        editTracker = new EditTracker();
         statePcs = new PropertyChangeSupport(this);
         desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
 
@@ -87,7 +105,7 @@ public class MainGUI
 
         addWindowListener(new MainWindowAdapter());
 
-        JInternalFrame statusFrame = new JInternalFrame("Status", false, false, false, true);
+        statusFrame = new JInternalFrame("Status", false, false, false, true);
         statusFrame.setFrameIcon(null);
         statusProgressBar = new JProgressBar();
         statusFrame.add(statusProgressBar);
@@ -103,6 +121,17 @@ public class MainGUI
         main.setVisible(true);
         main.loadDataDefault();
         main.initialSetup(false);
+    }
+
+    private static void updateEditControl(Edit e, JMenuItem menuItem, String actionName)
+    {
+        if (e == null) {
+            menuItem.setEnabled(false);
+            menuItem.setText(actionName);
+        } else {
+            menuItem.setEnabled(true);
+            menuItem.setText(actionName + ' ' + e);
+        }
     }
 
     private void uriOpenFailed(URI uri)
@@ -270,6 +299,131 @@ public class MainGUI
         }
     }
 
+    void updateEditControls()
+    {
+        updateEditControl(editTracker.peekUndo(), undoItem, "Undo");
+        updateEditControl(editTracker.peekRedo(), redoItem, "Redo");
+        syncItem.setEnabled(hasAuth() && editTracker.hasChanges());
+    }
+
+    void enableEverything()
+    {
+        final JMenuBar menuBar = getJMenuBar();
+        final int menuCount = menuBar.getMenuCount();
+        for (int i = 0; i < menuCount; i++) {
+            menuBar.getMenu(i).setEnabled(true);
+        }
+
+        if (disabledComponents != null) {
+            Component comp;
+            while ((comp = disabledComponents.poll()) != null) {
+                comp.setEnabled(true);
+            }
+        }
+    }
+
+    void disableEverything()
+    {
+        final JMenuBar menuBar = getJMenuBar();
+        final int menuCount = menuBar.getMenuCount();
+        for (int i = 0; i < menuCount; i++) {
+            menuBar.getMenu(i).setEnabled(false);
+        }
+
+        if (disabledComponents == null)
+            disabledComponents = new ArrayDeque<>();
+        else if (!disabledComponents.isEmpty())
+            return;
+        JInternalFrame[] frames = desktopPane.getAllFrames();
+        Deque<Component> q = new ArrayDeque<>();
+        Collections.addAll(q, frames);
+        int length;
+        int i;
+        Component comp;
+        while ((comp = q.poll()) != null) {
+            if (comp != statusFrame && comp.isEnabled()) {
+                if (comp instanceof JInternalFrame frame) {
+                    comp = frame.getContentPane();
+                }
+                if (comp instanceof Container cont) {
+                    length = cont.getComponentCount();
+                    for (i = 0; i < length; i++) {
+                        q.add(cont.getComponent(i));
+                    }
+                }
+                comp.setEnabled(false);
+                disabledComponents.add(comp);
+            }
+        }
+    }
+
+    private void fireUpdate(Edit e, boolean isCommit)
+    {
+        if (e != null) {
+            LibraryResource target = e.getTarget();
+            if (desktopPane.getFrameForResource(target) instanceof SavedTrackCollectionFrame frame) {
+                frame.model.fireUpdate(e, isCommit);
+            } else {
+                desktopPane.updateComponentsForResource(target);
+            }
+        }
+    }
+
+    private void undo()
+    {
+        fireUpdate(editTracker.undo(library), false);
+        updateEditControls();
+    }
+
+    private void redo()
+    {
+        fireUpdate(editTracker.redo(library), true);
+        updateEditControls();
+    }
+
+    void commitEdit(Edit e)
+    {
+        editTracker.commit(e, library);
+        fireUpdate(e, true);
+        updateEditControls();
+        library.markModified(e.getTarget());
+    }
+
+    void abandonEditsFor(LibraryResource resource)
+    {
+        editTracker.abandonEditsFor(resource);
+        updateEditControls();
+    }
+
+    private void pushFrameSimulateModality()
+    {
+        if (pushDoneListener == null) {
+            pushFrame.addInternalFrameListener(pushDoneListener = new InternalFrameAdapter()
+            {
+                @Override
+                public void internalFrameClosing(InternalFrameEvent e)
+                {
+                    enableEverything();
+                }
+            });
+        }
+        disableEverything();
+    }
+
+    private void sync(boolean simulateModality)
+    {
+        if (pushFrame == null) {
+            pushFrame = new EditPushFrame(this);
+            if (simulateModality) pushFrameSimulateModality();
+            desktopPane.add(pushFrame);
+            pushFrame.prompt();
+        } else if (!pushFrame.isVisible()) {
+            if (simulateModality) pushFrameSimulateModality();
+            desktopPane.add(pushFrame);
+            pushFrame.prompt();
+        }
+    }
+
     private JMenuBar createMenuBar()
     {
         JMenuBar menuBar = new JMenuBar();
@@ -288,13 +442,24 @@ public class MainGUI
         quitItem.addActionListener(actionEvent -> close());
         fileMenu.add(quitItem);
 
-        JMenu libraryMenu = new JMenu("Library");
-        libraryMenu.setMnemonic(KeyEvent.VK_L);
-        menuBar.add(libraryMenu);
-        JMenuItem cleanItem = new JMenuItem("Clean");
+        JMenu editMenu = new JMenu("Edit");
+        editMenu.setMnemonic(KeyEvent.VK_E);
+        menuBar.add(editMenu);
+        undoItem = new JMenuItem("Undo");
+        undoItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK));
+        undoItem.addActionListener(actionEvent -> undo());
+        undoItem.setEnabled(false);
+        editMenu.add(undoItem);
+        redoItem = new JMenuItem("Redo");
+        redoItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
+        redoItem.addActionListener(actionEvent -> redo());
+        redoItem.setEnabled(false);
+        editMenu.add(redoItem);
+        editMenu.addSeparator();
+        JMenuItem cleanItem = new JMenuItem("Clean library");
         cleanItem.addActionListener(actionEvent -> desktopPane.openNewInternalFrame(new LibraryCleanupFrame(this)));
         cleanItem.setEnabled(false);
-        libraryMenu.add(cleanItem);
+        editMenu.add(cleanItem);
 
         JMenu spotifyMenu = new JMenu("Spotify");
         spotifyMenu.setMnemonic(KeyEvent.VK_S);
@@ -305,7 +470,8 @@ public class MainGUI
         JMenuItem resetItem = new JMenuItem("Change client properties");
         resetItem.addActionListener(actionEvent -> initialSetup(true));
         spotifyMenu.add(resetItem);
-        JMenuItem syncItem = new JMenuItem("Synchronize changes", KeyEvent.VK_R);
+        syncItem = new JMenuItem("Synchronize changes", KeyEvent.VK_R);
+        syncItem.addActionListener(actionEvent -> sync(true));
         syncItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
         syncItem.setEnabled(false);
         spotifyMenu.add(syncItem);
@@ -328,7 +494,10 @@ public class MainGUI
             @Override
             protected JInternalFrame createNewFrame()
             {
-                return new SavedTrackCollectionFrame(MainGUI.this, library.getLikedSongs());
+                SavedResourceCollection<Track> ls = library.getLikedSongs();
+                SavedTrackCollectionFrame frame = new SavedTrackCollectionFrame(MainGUI.this, ls);
+                desktopPane.putResourceComponent(ls, frame);
+                return frame;
             }
         };
         savedTracksCheckbox.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK));
@@ -350,7 +519,7 @@ public class MainGUI
             if (HAS_LIBRARY_KEY.equals(prop)) {
                 boolean state = (Boolean) event.getNewValue();
                 cleanItem.setEnabled(state);
-                syncItem.setEnabled(state);
+                syncItem.setEnabled(state && editTracker.hasChanges());
                 playlistsCheckbox.setEnabled(state);
                 savedTracksCheckbox.setEnabled(state);
             } else if (HAS_AUTH_KEY.equals(prop)) {
@@ -442,17 +611,10 @@ public class MainGUI
     private class MainWindowAdapter
             extends WindowAdapter
     {
-        @Override
-        public void windowClosing(WindowEvent e)
+        private void actuallyClose()
         {
             for (JInternalFrame frame : desktopPane.getAllFrames()) {
                 frame.doDefaultCloseAction();
-            }
-
-            final JMenuBar menuBar = getJMenuBar();
-            final int menuCount = menuBar.getMenuCount();
-            for (int i = 0; i < menuCount; i++) {
-                menuBar.getMenu(i).setEnabled(false);
             }
 
             desktopPane.add(new JInternalFrame("Wait...",
@@ -496,6 +658,28 @@ public class MainGUI
                     dispose();
                 }
             }.execute();
+        }
+
+        @Override
+        public void windowClosing(WindowEvent e)
+        {
+            synchronized (client) {
+                disableEverything();
+                if (editTracker.hasChanges()) {
+                    if (pushDoneListener != null) pushFrame.removeInternalFrameListener(pushDoneListener);
+                    sync(false);
+                    pushFrame.addInternalFrameListener(new InternalFrameAdapter()
+                    {
+                        @Override
+                        public void internalFrameClosed(InternalFrameEvent e)
+                        {
+                            actuallyClose();
+                        }
+                    });
+                } else {
+                    actuallyClose();
+                }
+            }
         }
     }
 
@@ -580,12 +764,13 @@ public class MainGUI
             } catch (InterruptedException | CancellationException e) {
                 stop();
             } catch (ExecutionException e) {
-                JOptionPane.showInternalMessageDialog(MainGUI.this,
+                JOptionPane.showInternalMessageDialog(desktopPane,
                         "There was an error playing the preview:\n\n" + e.getCause().getMessage(),
                         "Error", JOptionPane.ERROR_MESSAGE);
+            } finally {
+                statePcs.firePropertyChange(PREVIEWING_TRACK_KEY, track, null);
+                isPlaying = false;
             }
-            statePcs.firePropertyChange(PREVIEWING_TRACK_KEY, track, null);
-            isPlaying = false;
         }
     }
 }

@@ -8,8 +8,8 @@ import javax.swing.SwingWorker;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
-abstract class APIWorker<T>
-        extends SwingWorker<T, Void>
+abstract class APIWorker<T, V>
+        extends SwingWorker<T, V>
         implements ProgressTracker
 {
     protected final MainGUI main;
@@ -27,13 +27,13 @@ abstract class APIWorker<T>
 
     @Override
     protected T doInBackground()
-    throws IOException, SpotifyClientException
+    throws IOException, SpotifyClientException, InterruptedException
     {
         return doTask();
     }
 
     abstract protected T doTask()
-    throws SpotifyClientException, IOException;
+    throws SpotifyClientException, IOException, InterruptedException;
 
     @Override
     protected void done()
@@ -56,7 +56,7 @@ abstract class APIWorker<T>
     }
 
     @Override
-    public void updateProgress(int progress)
+    public final void updateProgress(int progress)
     {
         try {
             setProgress(progress);

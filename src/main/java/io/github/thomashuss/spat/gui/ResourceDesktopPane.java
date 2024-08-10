@@ -148,7 +148,7 @@ class ResourceDesktopPane
         }
     }
 
-    private void putResourceComponent(LibraryResource resource, ResourceComponent component)
+    void putResourceComponent(LibraryResource resource, ResourceComponent component)
     {
         ComponentNode newNode;
         synchronized (rq) {

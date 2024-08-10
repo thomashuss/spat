@@ -56,16 +56,6 @@ public class SavedResourceCollection<T extends SpotifyResource>
         return name;
     }
 
-    public int hashCode()
-    {
-        return resources.hashCode();
-    }
-
-    public boolean equals(Object other)
-    {
-        return other instanceof SavedResourceCollection && resources.equals(((SavedResourceCollection<?>) other).getSavedResources());
-    }
-
     public List<SavedResource<T>> getSavedResources()
     {
         return Collections.unmodifiableList(resources);
@@ -91,14 +81,50 @@ public class SavedResourceCollection<T extends SpotifyResource>
         resources.clear();
     }
 
-    void addResource(SavedResource<T> r)
+    public void addResource(SavedResource<T> r)
     {
         resources.add(r);
     }
 
-    public void removeResource(int index)
+    public void addResourceAt(SavedResource<T> r, int i)
     {
-        resources.remove(index);
+        resources.add(i, r);
+    }
+
+    public void addResources(List<SavedResource<T>> r)
+    {
+        resources.addAll(r);
+    }
+
+    public void addResourcesAt(List<SavedResource<T>> r, int i)
+    {
+        resources.addAll(i, r);
+    }
+
+    public SavedResource<T> removeResource(int index)
+    {
+        return resources.remove(index);
+    }
+
+    public void removeSavedResourcesInRange(int start, int end)
+    {
+        resources.subList(start, end).clear();
+    }
+
+    public List<T> getRange(int start, int end)
+    {
+        return resources.subList(start, end).stream().map(SavedResource::getResource).toList();
+    }
+
+    public void move(int insertBefore, int rangeStart, int rangeLength, boolean moveForward)
+    {
+        if (insertBefore > rangeStart) {
+            Collections.rotate(resources.subList(rangeStart, insertBefore),
+                    moveForward ? -rangeLength : rangeLength);
+        } else {
+            Collections.rotate(resources.subList(insertBefore, rangeStart + rangeLength),
+                    moveForward ? rangeLength : -rangeLength);
+        }
     }
 
     public void removeResource(T resource)
