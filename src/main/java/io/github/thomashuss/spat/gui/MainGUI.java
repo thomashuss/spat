@@ -364,22 +364,28 @@ public class MainGUI
 
     private void undo()
     {
-        fireUpdate(editTracker.undo(library), false);
+        synchronized (client) {
+            fireUpdate(editTracker.undo(library), false);
+        }
         updateEditControls();
     }
 
     private void redo()
     {
-        fireUpdate(editTracker.redo(library), true);
+        synchronized (client) {
+            fireUpdate(editTracker.redo(library), true);
+        }
         updateEditControls();
     }
 
     void commitEdit(Edit e)
     {
-        editTracker.commit(e, library);
+        synchronized (client) {
+            editTracker.commit(e, library);
+            library.markModified(e.getTarget());
+        }
         fireUpdate(e, true);
         updateEditControls();
-        library.markModified(e.getTarget());
     }
 
     void abandonEditsFor(LibraryResource resource)
