@@ -2,23 +2,16 @@ package io.github.thomashuss.spat.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.time.Instant;
-
-/**
- * Contains information about a Spotify session.
- */
-public class SpotifyToken
+class SpotifyToken
 {
     @JsonProperty("access_token")
-    transient String accessToken;
+    String accessToken;
     @JsonProperty("token_type")
-    transient String tokenType;
+    String tokenType;
     @JsonProperty("expires_in")
-    transient int expiresIn;
+    int expiresIn;
     @JsonProperty("refresh_token")
     String refreshToken;
     @JsonProperty("scope")
-    transient String scope;
-    Instant expires;
-    String accessAuthorization;
+    String scope;
 }

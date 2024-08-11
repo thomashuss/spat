@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import io.github.thomashuss.spat.Spat;
 import io.github.thomashuss.spat.library.Album;
 import io.github.thomashuss.spat.library.Artist;
 import io.github.thomashuss.spat.library.AudioFeatures;
@@ -51,14 +52,8 @@ public class SpotifyClient
         }
     }
 
-    private final ObjectMapper mapper;
+    private static final ObjectMapper mapper = Spat.mapper;
     private Library library;
-
-    public SpotifyClient()
-    {
-        super();
-        mapper = new ObjectMapper();
-    }
 
     @Override
     SpotifyToken parseToken(BufferedReader reader)

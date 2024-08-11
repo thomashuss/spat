@@ -170,9 +170,7 @@ public class MainGUI
                 @Override
                 public void internalFrameClosed(InternalFrameEvent e)
                 {
-                    firePropertyChange(HAS_AUTH_KEY, false, client.getToken() != null);
-                    if (library == null)
-                        openLibrary();
+                    if (library == null) openLibrary();
                 }
             });
         } else if (!loginFrame.isVisible()) {
@@ -236,7 +234,7 @@ public class MainGUI
         Spat.preferences.put(Spat.P_CLIENT_ID, clientId);
         if (redirectUri != null) Spat.preferences.put(Spat.P_REDIRECT_URI, redirectUri.toString());
 
-        if (shouldForce || client.getToken() == null) {
+        if (shouldForce || !client.isTokenValid()) {
             statePcs.firePropertyChange(HAS_AUTH_KEY, true, false);
             showLogin();
         } else {
@@ -246,7 +244,7 @@ public class MainGUI
 
     public boolean hasAuth()
     {
-        return client.getToken() != null;
+        return client.isTokenValid();
     }
 
     private void loadDataDefault()
@@ -263,14 +261,8 @@ public class MainGUI
 
     private void saveDataDefault()
     {
-        if (saveDirectory != null && library != null) {
-            try {
-                SaveDirectory.saveData(saveDirectory, client);
-            } catch (SaveFileException | IOException ignored) {
-            }
-            if (library.hasModified()) {
-                library.saveModified();
-            }
+        if (library != null && library.hasModified()) {
+            library.saveModified();
         }
     }
 
@@ -288,8 +280,9 @@ public class MainGUI
                 Spat.preferences.put(Spat.P_FILE_PATH, saveDirectory.getAbsolutePath());
                 Library lib = SaveDirectory.loadData(saveDirectory, client);
                 if (lib == null) {
-                    lib = SaveDirectory.createNewLibrary(saveDirectory);
+                    lib = SaveDirectory.createNewLibrary(saveDirectory, client);
                 }
+                firePropertyChange(HAS_AUTH_KEY, false, client.isTokenValid());
                 setLibrary(lib);
             } catch (SaveFileException | IOException e) {
                 JOptionPane.showMessageDialog(this,
@@ -640,14 +633,18 @@ public class MainGUI
             {
                 @Override
                 protected Void doInBackground()
+                throws IOException
                 {
                     saveDataDefault();
-                    if (library != null) {
-                        library.close();
-                    }
                     try {
-                        Spat.preferences.flush();
-                    } catch (BackingStoreException ignored) {
+                        if (library != null) {
+                            library.close();
+                        }
+                    } finally {
+                        try {
+                            Spat.preferences.flush();
+                        } catch (BackingStoreException ignored) {
+                        }
                     }
                     return null;
                 }
@@ -655,6 +652,13 @@ public class MainGUI
                 @Override
                 protected void done()
                 {
+                    try {
+                        get();
+                    } catch (InterruptedException | ExecutionException e) {
+                        JOptionPane.showMessageDialog(MainGUI.this,
+                                "An error occurred while finalizing the library:\n\n" + e.getMessage(),
+                                "Critical error", JOptionPane.ERROR_MESSAGE);
+                    }
                     dispose();
                 }
             }.execute();

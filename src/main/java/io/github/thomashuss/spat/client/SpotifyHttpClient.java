@@ -21,6 +21,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -31,7 +32,7 @@ import java.util.regex.Pattern;
  */
 abstract class SpotifyHttpClient
 {
-    private static final Pattern REDIRECT_PATTERN = Pattern.compile("([^=?&]+)=([^&]+)");
+    private static final Pattern QUERY_PATTERN = Pattern.compile("([^=?&]+)=([^&]+)");
     private static final String API_SCOPE = "playlist-read-private playlist-read-collaborative playlist-modify-private playlist-modify-public user-library-modify user-library-read";
     private static final Set<String> SCOPE_SET = new HashSet<>(Arrays.asList(API_SCOPE.split(" ")));
     private static final String PKCE_POSSIBLE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -48,7 +49,7 @@ abstract class SpotifyHttpClient
     private static final int PKCE_CODE_LENGTH = 64;
     private final Base64.Encoder b64Encoder;
     private final MessageDigest digest;
-    private SpotifyToken token;
+    private final Token token;
     private String clientId;
     private String loginState;
     private String pkceCodeVerifier;
@@ -62,12 +63,13 @@ abstract class SpotifyHttpClient
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
+        token = new Token();
     }
 
     private static Map<String, String> decodeQuery(URI uri)
     {
         Map<String, String> decodedQuery = new HashMap<>();
-        Matcher matcher = REDIRECT_PATTERN.matcher(uri.getQuery());
+        Matcher matcher = QUERY_PATTERN.matcher(uri.getQuery());
         while (matcher.find()) {
             decodedQuery.put(matcher.group(1), URLDecoder.decode(matcher.group(2), StandardCharsets.UTF_8));
         }
@@ -84,14 +86,14 @@ abstract class SpotifyHttpClient
         this.redirectUri = redirectUri;
     }
 
-    public SpotifyToken getToken()
+    public boolean isTokenValid()
     {
-        return token;
+        return token.isValid();
     }
 
-    public void setToken(SpotifyToken token)
+    public Token getToken()
     {
-        this.token = token;
+        return token;
     }
 
     private BufferedReader getConnectionReader(URL target)
@@ -103,7 +105,7 @@ abstract class SpotifyHttpClient
         refreshAccessToken();
         con = (HttpsURLConnection) target.openConnection();
         con.setRequestMethod("GET");
-        con.setRequestProperty("Authorization", token.accessAuthorization);
+        con.setRequestProperty("Authorization", token.getAccessAuthorization());
 
         code = con.getResponseCode();
         if (code == HttpsURLConnection.HTTP_OK) {
@@ -122,7 +124,7 @@ abstract class SpotifyHttpClient
 
         con.setRequestMethod(method);
         if (shouldAuthenticate) {
-            con.setRequestProperty("Authorization", token.accessAuthorization);
+            con.setRequestProperty("Authorization", token.getAccessAuthorization());
         }
         con.setRequestProperty("Content-Length", Integer.toString(data.getBytes().length));
         con.setRequestProperty("Content-Type", type);
@@ -232,24 +234,26 @@ abstract class SpotifyHttpClient
     private void refreshAccessToken(String out)
     throws IOException, SpotifyClientHttpException, SpotifyAuthenticationException
     {
+        SpotifyToken spotifyToken;
         try (BufferedReader reader = getConnectionReader(SPOTIFY_TOKEN_URL, "POST", out,
                 "application/x-www-form-urlencoded", false)) {
-            token = parseToken(reader);
+            spotifyToken = parseToken(reader);
         }
 
-        if (!(new HashSet<>(Arrays.asList(token.scope.split(" ")))).equals(SCOPE_SET)) {
+        if (!(new HashSet<>(Arrays.asList(spotifyToken.scope.split(" ")))).equals(SCOPE_SET)) {
             throw new SpotifyAuthenticationException("Scope mismatch.");
         }
-        token.accessAuthorization = token.tokenType + ' ' + token.accessToken;
-        token.expires = Instant.now().plusSeconds(token.expiresIn);
+        token.setAccessAuthorization(spotifyToken.tokenType + ' ' + spotifyToken.accessToken);
+        token.setExpires(Instant.now().plusSeconds(spotifyToken.expiresIn));
+        token.setRefreshToken(spotifyToken.refreshToken);
     }
 
     public void loginCallback(URI callback)
     throws IOException, SpotifyClientException
     {
         Map<String, String> req = decodeQuery(callback);
-        if (!req.containsKey("state") || !req.get("state").equals(loginState)) {
-            throw new RuntimeException("Authentication state mismatch.");
+        if (!Objects.equals(req.get("state"), loginState)) {
+            throw new SpotifyAuthenticationException("Authentication state mismatch.");
         }
         refreshAccessToken("client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
                 + "&code=" + URLEncoder.encode(req.get("code"), StandardCharsets.UTF_8)
@@ -264,10 +268,12 @@ abstract class SpotifyHttpClient
         if (token == null) {
             throw new SpotifyClientStateException("No Spotify access token exists.");
         }
-        if (Instant.now().isBefore(token.expires)) {
+        Instant expires = token.getExpires();
+        if (expires != null && Instant.now().isBefore(expires)) {
             return;
         }
-        refreshAccessToken("grant_type=refresh_token&refresh_token=" + URLEncoder.encode(token.refreshToken, StandardCharsets.UTF_8)
+        refreshAccessToken("grant_type=refresh_token&refresh_token="
+                + URLEncoder.encode(token.getRefreshToken(), StandardCharsets.UTF_8)
                 + "&client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8));
     }
 }

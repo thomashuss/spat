@@ -1,30 +1,39 @@
 package io.github.thomashuss.spat.library;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.thomashuss.spat.Spat;
 import io.github.thomashuss.spat.client.SpotifyClient;
-import io.github.thomashuss.spat.client.SpotifyToken;
+import io.github.thomashuss.spat.client.Token;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 
 public class SaveDirectory
 {
     private static final String DB_NAME = "db";
-    private static final String TOKEN_NAME = "token";
+    private static final String STATE_NAME = "state.json";
+    @JsonIgnore
+    File dbDir;
+    @JsonIgnore
+    private File stateFile;
+    @JsonProperty("token")
+    private Token token;
+    @JsonProperty("mapSize")
+    long mapSize = Library.INITIAL_MAP_SIZE;
 
-    static {
-        Spat.fury.register(SpotifyToken.class);
-    }
-
-    public static Library createNewLibrary(File directory)
+    public static Library createNewLibrary(File directory, SpotifyClient client)
     {
-        File file = directory.toPath().resolve(DB_NAME).toFile();
-        if (file.exists() || file.mkdir())
-            return new Library(file);
-        else
+        Path path = directory.toPath();
+        File file = path.resolve(DB_NAME).toFile();
+        if (file.exists() || file.mkdir()) {
+            SaveDirectory state = new SaveDirectory();
+            state.dbDir = file;
+            state.stateFile = path.resolve(STATE_NAME).toFile();
+            state.token = client.getToken();
+            return new Library(state);
+        } else
             return null;
     }
 
@@ -35,38 +44,25 @@ public class SaveDirectory
             throw new SaveFileException("The path `" + directory + "' is not a directory.");
         }
         Path path = directory.toPath();
-        File dbFile = path.resolve(DB_NAME).toFile();
-        if (!dbFile.exists()) {
+        File dbDir = path.resolve(DB_NAME).toFile();
+        if (!dbDir.exists()) {
             return null;
         }
 
-        Path tokenPath = path.resolve(TOKEN_NAME);
-        if (tokenPath.toFile().exists()) {
-            Object token = Spat.fury.deserialize(Files.readAllBytes(tokenPath));
-            if (token != null) client.setToken((SpotifyToken) token);
-        }
-
-        return new Library(dbFile);
+        File stateFile = path.resolve(STATE_NAME).toFile();
+        SaveDirectory state = stateFile.exists()
+                ? Spat.mapper.readValue(stateFile, SaveDirectory.class) : new SaveDirectory();
+        state.dbDir = dbDir;
+        state.stateFile = stateFile;
+        Token token = client.getToken();
+        token.update(state.token);
+        state.token = token;
+        return new Library(state);
     }
 
-    public static void saveData(File directory, SpotifyClient client)
-    throws SaveFileException, IOException
+    void saveData()
+    throws IOException
     {
-        if (directory.exists()) {
-            if (directory.isFile()) {
-                throw new SaveFileException("The path `" + directory + "' is a file.");
-            }
-        } else {
-            if (!directory.mkdir()) {
-                throw new SaveFileException("Could not create directory `" + directory + "'.");
-            }
-        }
-
-        Path path = directory.toPath();
-
-        SpotifyToken token = client.getToken();
-        if (token != null) {
-            Files.write(path.resolve(TOKEN_NAME), Spat.fury.serialize(token), StandardOpenOption.CREATE);
-        }
+        Spat.mapper.writeValue(stateFile, this);
     }
 }

@@ -8,9 +8,10 @@ import org.lmdbjava.CursorIterable;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.DbiFlags;
 import org.lmdbjava.Env;
+import org.lmdbjava.Stat;
 import org.lmdbjava.Txn;
 
-import java.io.File;
+import java.io.IOException;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Array;
@@ -50,10 +51,17 @@ import java.util.stream.Stream;
 public class Library
         implements AutoCloseable
 {
-    public static final String LIKED_SONGS_KEY = "likedSongs";
-    public static final String SAVED_ALBUMS_KEY = "savedAlbums";
+    public static final long INITIAL_MAP_SIZE = 100_485_760;
+    private static final String LIKED_SONGS_KEY = "likedSongs";
+    private static final String SAVED_ALBUMS_KEY = "savedAlbums";
+    /**
+     * Purely heuristic.
+     */
+    private static final int CHECK_SIZE_FREQ = 1000;
 
-    // No need for a thread safe instance due to synchronization on lmdb env.
+    /**
+     * No need for a thread safe instance due to synchronization on lmdb env.
+     */
     private static final Fury fury = Spat.fury;
 
     static {
@@ -70,6 +78,8 @@ public class Library
         fury.register(ZonedDateTime.class);
     }
 
+    private final SaveDirectory state;
+    private final int pageSize;
     private final Dbi<ByteBuffer> savedResourceListDb;
     private final Env<ByteBuffer> env;
     private final Queue<Runnable> needsFinalize;
@@ -85,19 +95,22 @@ public class Library
     private ByteBuffer valBuf = ByteBuffer.allocateDirect(1024);
     private MemoryBuffer valMemBuf = MemoryBuffer.fromByteBuffer(valBuf);
     private int srSize = 0;
+    private int ops = 0;
 
     private WeakReference<SavedResourceCollection<Album>> savedAlbums;
     private WeakReference<SavedResourceCollection<Track>> likedSongs;
 
-    Library(File dbPath)
+    Library(SaveDirectory state)
     {
+        this.state = state;
         needsFinalize = new ArrayDeque<>();
         needsSave = new HashSet<>();
 
         env = Env.create()
-                .setMapSize(10_485_760)  // TODO: handle map growth
+                .setMapSize(state.mapSize)
                 .setMaxDbs(7)
-                .open(dbPath);
+                .open(state.dbDir);
+        pageSize = env.stat().pageSize;
         keyBuf = ByteBuffer.allocateDirect(env.getMaxKeySize());
         keyMemBuf = MemoryBuffer.fromByteBuffer(keyBuf);
         albumDb = new ResourceKV<>(Album.class, "album", false,
@@ -116,6 +129,43 @@ public class Library
 
         fury.registerSerializer(SavedAlbum.class, new SavedResourceSerializer<>(SavedAlbum.class, SavedAlbum::new, savedResourceFinalizer(albumDb)));
         fury.registerSerializer(SavedTrack.class, new SavedResourceSerializer<>(SavedTrack.class, SavedTrack::new, savedResourceFinalizer(trackDb)));
+    }
+
+    /**
+     * Determines if the LMDB map size "should" be increased, and if so, increases it.  The map size should be
+     * substantially overestimated, as the default one is, so an invocation of this method will increase it by
+     * quite a bit.  A new size is computed by multiplying the number of pages in all DBs by page size and by 4.
+     * If this new size is greater than the current size, we apply the new size.
+     */
+    private void growMap()
+    {
+        final long compareSize;
+        try (Txn<ByteBuffer> txn = env.txnRead()) {
+            final Stat s1 = albumDb.db.stat(txn), s2 = artistDb.db.stat(txn), s3 = genreDb.db.stat(txn),
+                    s4 = labelDb.db.stat(txn), s5 = playlistDb.db.stat(txn), s6 = trackDb.db.stat(txn),
+                    s7 = savedResourceListDb.stat(txn);
+            compareSize = (s1.branchPages + s1.leafPages + s1.overflowPages
+                    + s2.branchPages + s2.leafPages + s2.overflowPages
+                    + s3.branchPages + s3.leafPages + s3.overflowPages
+                    + s4.branchPages + s4.leafPages + s4.overflowPages
+                    + s5.branchPages + s5.leafPages + s5.overflowPages
+                    + s6.branchPages + s6.leafPages + s6.overflowPages
+                    + s7.branchPages + s7.leafPages + s7.overflowPages) * pageSize * 4;
+        }
+        if (compareSize > state.mapSize) {
+            env.setMapSize(state.mapSize = compareSize);
+        }
+    }
+
+    /**
+     * Invokes <code>growMap()</code> if enough operations have been performed.
+     */
+    private void maybeGrowMap()
+    {
+        if (++ops == CHECK_SIZE_FREQ) {
+            growMap();
+            ops = 0;
+        }
     }
 
     private static <T extends LibraryResource, R extends SavedResource<T>> BiFunction<R, MemoryBuffer, Runnable> savedResourceFinalizer(
@@ -234,16 +284,6 @@ public class Library
         if (track != null) collection.addResource(new SavedTrack(addedAt, track));
     }
 
-    public void saveTrackToCollection(SavedTrack sr, SavedResourceCollection<Track> collection)
-    {
-        if (sr != null) collection.addResource(sr);
-    }
-
-    public void saveTrackToCollection(Track track, ZonedDateTime addedAt, SavedResourceCollection<Track> collection, int i)
-    {
-        if (track != null) collection.addResourceAt(new SavedTrack(addedAt, track), i);
-    }
-
     public void saveTrackToCollection(SavedTrack sr, SavedResourceCollection<Track> collection, int i)
     {
         if (sr != null) collection.addResourceAt(sr, i);
@@ -326,6 +366,7 @@ public class Library
                 fury.serialize(valMemBuf, savedResources);
                 ensureValOffHeap();
                 savedResourceListDb.put(encodeKey(collection.getKey()), valBuf);
+                growMap();
             }
         }
     }
@@ -372,33 +413,40 @@ public class Library
 
     public void saveModified()
     {
-        Iterator<LibraryResource> it = needsSave.iterator();
-        LibraryResource lr;
-        while (it.hasNext()) {
-            lr = it.next();
-            if (lr instanceof Album) albumDb.save((Album) lr);
-            else if (lr instanceof Artist) artistDb.save((Artist) lr);
-            else if (lr instanceof Genre) genreDb.save((Genre) lr);
-            else if (lr instanceof Label) labelDb.save((Label) lr);
-            else if (lr instanceof Playlist p) {
-                playlistDb.save(p);
-                depopulateSavedResources(p);
-            } else if (lr instanceof SavedResourceCollection<?> src) depopulateSavedResources(src);
-            else if (lr instanceof Track) trackDb.save((Track) lr);
-            it.remove();
+        synchronized (env) {
+            Iterator<LibraryResource> it = needsSave.iterator();
+            LibraryResource lr;
+            while (it.hasNext()) {
+                lr = it.next();
+                if (lr instanceof Album) albumDb.save((Album) lr);
+                else if (lr instanceof Artist) artistDb.save((Artist) lr);
+                else if (lr instanceof Genre) genreDb.save((Genre) lr);
+                else if (lr instanceof Label) labelDb.save((Label) lr);
+                else if (lr instanceof Playlist p) {
+                    playlistDb.save(p);
+                    depopulateSavedResources(p);
+                } else if (lr instanceof SavedResourceCollection<?> src) depopulateSavedResources(src);
+                else if (lr instanceof Track) trackDb.save((Track) lr);
+                it.remove();
+            }
+            growMap();
         }
     }
 
     @Override
     public void close()
+    throws IOException
     {
-        albumDb.close();
-        artistDb.close();
-        genreDb.close();
-        labelDb.close();
-        playlistDb.close();
-        trackDb.close();
-        env.close();
+        synchronized (env) {
+            albumDb.close();
+            artistDb.close();
+            genreDb.close();
+            labelDb.close();
+            playlistDb.close();
+            trackDb.close();
+            env.close();
+            state.saveData();
+        }
     }
 
     private void writeResourceField(MemoryBuffer buffer, LibraryResource field)
@@ -558,7 +606,7 @@ public class Library
         }
     }
 
-    private class ResourceKV<T extends LibraryResource>  // TODO: may not need to be nested
+    private class ResourceKV<T extends LibraryResource>
             implements AutoCloseable
     {
         private final Class<T> valueClass;
@@ -741,6 +789,7 @@ public class Library
             serializer.accept(valMemBuf, val);
             ensureValOffHeap();
             db.put(keyBuf, valBuf);
+            maybeGrowMap();
         }
 
         private static class ResourceCacheNode
