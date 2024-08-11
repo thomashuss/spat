@@ -1,5 +1,7 @@
 package io.github.thomashuss.spat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.apache.fury.Fury;
 import org.apache.fury.config.Language;
 
@@ -16,5 +18,8 @@ public class Spat
     public static final Preferences preferences = Preferences.userNodeForPackage(Spat.class);
     public static final Fury fury = Fury.builder().withLanguage(Language.JAVA)
             .requireClassRegistration(true)
+            .build();
+    public static final ObjectMapper mapper = JsonMapper.builder()
+            .findAndAddModules()
             .build();
 }
