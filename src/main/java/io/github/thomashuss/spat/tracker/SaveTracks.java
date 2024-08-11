@@ -11,8 +11,8 @@ import io.github.thomashuss.spat.library.Track;
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Objects;
 
 public class SaveTracks
@@ -26,8 +26,11 @@ public class SaveTracks
 
     public SaveTracks(List<Track> tracks)
     {
-        this.tracks = new ArrayList<>(tracks);
-        Collections.reverse(this.tracks);
+        this.tracks = new ArrayList<>(tracks.size());
+        ListIterator<Track> li = tracks.listIterator(tracks.size());
+        while (li.hasPrevious()) {
+            this.tracks.add(li.previous());
+        }
         this.addedAt = ZonedDateTime.now();
     }
 
