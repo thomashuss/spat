@@ -82,8 +82,14 @@ class SavedTrackTableModel
     public Object getValueAt(int row, int col)
     {
         return switch (col) {
-            case 1 -> Arrays.stream(get(row).getResource().getArtists()).map(Artist::getName)
-                    .collect(Collectors.joining(", "));  // TODO: better
+            case 1 -> {
+                Artist[] artists = get(row).getResource().getArtists();
+                if (artists.length > 1)
+                    yield Arrays.stream(artists).map(Artist::getName)
+                        .collect(Collectors.joining(", "));
+                else
+                    yield artists[0].getName();
+            }
             case 2 -> get(row).getResource().getAlbum().getName();
             default -> super.getValueAt(row, col);
         };
