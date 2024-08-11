@@ -265,6 +265,7 @@ public class SpotifyClient
             }
             apiUrl = (root = root.get("next")) != null ? root.asText(null) : null;
         } while (apiUrl != null);
+        ls.reverse();
         library.markModified(ls);
         progressTracker.updateProgress(100);
     }

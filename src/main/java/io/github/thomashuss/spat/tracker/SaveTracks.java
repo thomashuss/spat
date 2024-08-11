@@ -10,6 +10,8 @@ import io.github.thomashuss.spat.library.Track;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -20,17 +22,19 @@ public class SaveTracks
     private final ZonedDateTime addedAt;
     private final List<Track> tracks;
     private SavedResourceCollection<Track> ls;
+    private int index;
 
     public SaveTracks(List<Track> tracks)
     {
-        this.tracks = tracks;
+        this.tracks = new ArrayList<>(tracks);
+        Collections.reverse(this.tracks);
         this.addedAt = ZonedDateTime.now();
     }
 
     @Override
     public int index()
     {
-        return 0;
+        return index;
     }
 
     @Override
@@ -50,14 +54,15 @@ public class SaveTracks
     {
         if (ls == null) {
             ls = library.getLikedSongs();
+            index = ls.getNumResources();
         }
-        library.saveTracksToCollection(tracks, addedAt, ls, 0);
+        library.saveTracksToCollection(tracks, addedAt, ls);
     }
 
     @Override
     void revert(Library library)
     {
-        ls.removeSavedResourcesInRange(0, tracks.size());
+        ls.removeSavedResourcesInRange(index, index + tracks.size());
     }
 
     @Override

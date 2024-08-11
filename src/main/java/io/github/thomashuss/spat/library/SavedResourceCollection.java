@@ -139,4 +139,9 @@ public class SavedResourceCollection<T extends SpotifyResource>
             }
         }
     }
+
+    public void reverse()
+    {
+        Collections.reverse(resources);
+    }
 }
