@@ -70,7 +70,7 @@ class PlaylistTrackTableModel
         protected boolean commitDrop(boolean isIntraModel, int targetRow, TrackTransferable transferable)
         {
             if (isIntraModel) {
-                if (targetRow > transferable.rangeStart + transferable.rangeLength) {
+                if (targetRow > transferable.rangeStart + transferable.rangeLength || targetRow < transferable.rangeStart) {
                     main.commitEdit(new MoveTracks((Playlist) collection, targetRow,
                             transferable.rangeStart, transferable.rangeLength));
                     return true;
