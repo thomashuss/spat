@@ -13,7 +13,7 @@ import java.util.List;
  * Any user-defined collection of <code>LibraryResource</code>s.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SavedResourceCollection<T extends SpotifyResource>
+public class SavedResourceCollection<T extends AbstractSpotifyResource>
         implements LibraryResource
 {
     @JsonIgnore

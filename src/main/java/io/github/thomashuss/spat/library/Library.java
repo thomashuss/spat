@@ -349,7 +349,7 @@ public class Library
         }
     }
 
-    private <T extends SpotifyResource> void depopulateSavedResources(SavedResourceCollection<T> collection)
+    private <T extends AbstractSpotifyResource> void depopulateSavedResources(SavedResourceCollection<T> collection)
     {
         ArrayList<SavedResource<T>> savedResources = collection.resources;
         if (savedResources != null) {
