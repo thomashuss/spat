@@ -1,12 +1,13 @@
 package io.github.thomashuss.spat.gui;
 
+import io.github.thomashuss.spat.library.AbstractSpotifyResource;
 import io.github.thomashuss.spat.library.SavedResource;
 import io.github.thomashuss.spat.library.SavedResourceCollection;
-import io.github.thomashuss.spat.library.SpotifyResource;
 
 import javax.swing.table.AbstractTableModel;
+import java.util.regex.Pattern;
 
-abstract class SavedResourceTableModel<T extends SpotifyResource>
+abstract class SavedResourceTableModel<T extends AbstractSpotifyResource>
         extends AbstractTableModel
 {
     protected static final String[] COL_NAMES = {"Name", "Saved At"};
@@ -48,6 +49,26 @@ abstract class SavedResourceTableModel<T extends SpotifyResource>
     public String getColumnName(int col)
     {
         return COL_NAMES[col];
+    }
+
+    public int findByName(String pattern, int startAt)
+    {
+        Pattern p = Pattern.compile(pattern, Pattern.CASE_INSENSITIVE);
+        int idx = findByName(p, startAt, collection.getNumResources());
+        if (idx == -1) {
+            idx = findByName(p, 0, startAt);
+        }
+        return idx;
+    }
+
+    public int findByName(Pattern pattern, int startAt, int until)
+    {
+        for (int i = startAt; i < until; i++) {
+            if (pattern.matcher(collection.getSavedResourceAt(i).getResource().getName()).find()) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     abstract protected void populate();

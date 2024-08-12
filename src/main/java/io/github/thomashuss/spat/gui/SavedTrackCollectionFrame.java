@@ -7,7 +7,6 @@ import io.github.thomashuss.spat.library.Track;
 
 import javax.swing.AbstractAction;
 import javax.swing.ActionMap;
-import javax.swing.BoxLayout;
 import javax.swing.DropMode;
 import javax.swing.InputMap;
 import javax.swing.JButton;
@@ -15,6 +14,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import java.awt.BorderLayout;
@@ -22,6 +22,7 @@ import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
 class SavedTrackCollectionFrame
@@ -66,8 +67,10 @@ class SavedTrackCollectionFrame
                 }
             }
         });
-        table.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), DELETE_ENTRIES);
-        table.getActionMap().put(DELETE_ENTRIES, new AbstractAction()
+        InputMap tableInputMap = table.getInputMap();
+        tableInputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), DELETE_ENTRIES);
+        ActionMap tableActionMap = table.getActionMap();
+        tableActionMap.put(DELETE_ENTRIES, new AbstractAction()
         {
             @Override
             public void actionPerformed(ActionEvent actionEvent)
@@ -90,12 +93,27 @@ class SavedTrackCollectionFrame
         table.addMouseListener(new OpenClickAdapter(openButton));
         table.addKeyListener(new OpenKeyAdapter(openButton));
 
+        JTextField searchField = new JTextField();
+        searchField.addActionListener(actionEvent -> search(searchField.getText()));
+        table.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyPressed(KeyEvent e)
+            {
+                if (e.getKeyCode() == KeyEvent.VK_SLASH) {
+                    searchField.requestFocusInWindow();
+                    e.consume();
+                }
+            }
+        });
+
         JScrollPane scrollPane = new JScrollPane(table);
         add(scrollPane);
 
         JPanel tablePane = new JPanel();
-        tablePane.setLayout(new BoxLayout(tablePane, BoxLayout.PAGE_AXIS));
-        tablePane.add(scrollPane);
+        tablePane.setLayout(new BorderLayout());
+        tablePane.add(scrollPane, BorderLayout.CENTER);
+        tablePane.add(searchField, BorderLayout.PAGE_END);
 
         JPanel buttonPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
         if (collection instanceof Playlist)
@@ -110,6 +128,15 @@ class SavedTrackCollectionFrame
         pack();
         setVisible(true);
         setSize(DIMENSION);
+    }
+
+    private void search(String pattern)
+    {
+        int index = model.findByName(pattern, table.getSelectedRow() + 1);
+        if (index != -1) {
+            table.setRowSelectionInterval(index, index);
+            table.scrollRectToVisible(table.getCellRect(index, 0, true));
+        }
     }
 
     @Override
