@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import io.github.thomashuss.spat.Spat;
+import io.github.thomashuss.spat.library.AbstractSpotifyResource;
 import io.github.thomashuss.spat.library.Album;
 import io.github.thomashuss.spat.library.Artist;
 import io.github.thomashuss.spat.library.AudioFeatures;
@@ -25,11 +26,11 @@ import java.time.LocalDate;
 import java.time.Year;
 import java.time.YearMonth;
 import java.time.ZonedDateTime;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A generic Spotify client.  The client does not update a resource unless the resource
@@ -350,76 +351,36 @@ public class SpotifyClient
      * @throws IOException                on I/O errors
      * @throws SpotifyClientHttpException if there is an unexpected HTTP error when communicating with Spotify
      */
-    public synchronized void updateAudioFeaturesForTracks(Collection<Track> tracks, ProgressTracker progressTracker)
+    public synchronized void updateAudioFeaturesForTracks(List<Track> tracks, ProgressTracker progressTracker)
     throws IOException, SpotifyClientException
     {
-        Iterator<Track> it = tracks.iterator();
-        JsonNode audioFeatures;
-        Set<String> workingIds = new HashSet<>();  // TODO: use doIntervals
-        Track track;
-        final int size = tracks.size();
-        float progress = 0;
-        progressTracker.updateProgress(0);
-
-        while (it.hasNext()) {
-            while (it.hasNext() && workingIds.size() < MAXIMUM_TRACK_IDS_REQUEST) {
-                track = it.next();
-                workingIds.add(track.getId());
-            }
-
-            if (workingIds.isEmpty()) {
-                break;
-            } else {
-                audioFeatures = apiToTree(makeUri(
-                        "https://api.spotify.com/v1/audio-features?ids=" + String.join(",", workingIds)
-                )).get("audio_features");
-                if (audioFeatures.isArray()) {
-                    for (JsonNode node : audioFeatures) {
-                        treeToAudioFeatures(node);
-                    }
+        doIntervals(MAXIMUM_TRACK_IDS_REQUEST, tracks, (trackSub) -> {
+            JsonNode audioFeatures = apiToTree(makeUri(
+                    "https://api.spotify.com/v1/audio-features?ids="
+                            + joinIds(trackSub)
+            )).get("audio_features");
+            if (audioFeatures.isArray()) {
+                for (JsonNode node : audioFeatures) {
+                    treeToAudioFeatures(node);
                 }
-                progress += (float) workingIds.size() / size * 100;
-                progressTracker.updateProgress((int) progress);
-                workingIds.clear();
             }
-        }
-        progressTracker.updateProgress(100);
+        }, progressTracker);
     }
 
-    public synchronized void updateTracks(Collection<Track> tracks, ProgressTracker progressTracker)
+    public synchronized void updateTracks(List<Track> tracks, ProgressTracker progressTracker)
     throws IOException, SpotifyClientException
     {
-        Iterator<Track> it = tracks.iterator();
-        JsonNode tracksNode;
-        Set<String> workingIds = new HashSet<>();
-        Track track;
-        final int size = tracks.size();
-        float progress = 0;
-        progressTracker.updateProgress(0);
-
-        while (it.hasNext()) {
-            while (it.hasNext() && workingIds.size() < MAXIMUM_TRACK_IDS_REQUEST) {
-                track = it.next();
-                workingIds.add(track.getId());
-            }
-
-            if (workingIds.isEmpty()) {
-                break;
-            } else {
-                tracksNode = apiToTree(makeUri(
-                        "https://api.spotify.com/v1/tracks?ids=" + String.join(",", workingIds)
-                )).get("tracks");
-                if (tracksNode.isArray()) {
-                    for (JsonNode trackNode : tracksNode) {
-                        treeToTrack(trackNode, true, null);
-                    }
+        doIntervals(MAXIMUM_TRACK_IDS_REQUEST, tracks, (trackSub) -> {
+            JsonNode tracksNode = apiToTree(makeUri(
+                    "https://api.spotify.com/v1/tracks?ids="
+                            + joinIds(trackSub)
+            )).get("tracks");
+            if (tracksNode.isArray()) {
+                for (JsonNode trackNode : tracksNode) {
+                    treeToTrack(trackNode, true, null);
                 }
-                progress += (float) workingIds.size() / size * 100;
-                progressTracker.updateProgress((int) progress);
-                workingIds.clear();
             }
-        }
-        progressTracker.updateProgress(100);
+        }, progressTracker);
     }
 
     public synchronized void updateTrack(Track track)
@@ -434,38 +395,18 @@ public class SpotifyClient
         treeToArtist(apiToTree(makeUri("https://api.spotify.com/v1/artists/" + artist.getId())), true);
     }
 
-    public synchronized void updateArtists(Collection<Artist> artists, ProgressTracker progressTracker)
+    public synchronized void updateArtists(List<Artist> artists, ProgressTracker progressTracker)
     throws IOException, SpotifyClientException
     {
-        Iterator<Artist> it = artists.iterator();
-        Set<String> workingIds = new HashSet<>();
-        Artist artist;
-        JsonNode artistsNode;
-        final int size = artists.size();
-        float progress = 0;
-        progressTracker.updateProgress(0);
-
-        while (it.hasNext()) {
-            while (it.hasNext() && workingIds.size() < MAXIMUM_ARTIST_IDS_REQUEST) {
-                artist = it.next();
-                workingIds.add(artist.getId());
-            }
-
-            if (workingIds.isEmpty()) {
-                break;
-            } else {
-                artistsNode = apiToTree(makeUri("https://api.spotify.com/v1/artists?ids=" + String.join(",", workingIds))).get("artists");
-                if (artistsNode.isArray()) {
-                    for (JsonNode node : artistsNode) {
-                        treeToArtist(node, true);
-                    }
+        doIntervals(MAXIMUM_ARTIST_IDS_REQUEST, artists, (artistSub) -> {
+            JsonNode artistsNode = apiToTree(makeUri(
+                    "https://api.spotify.com/v1/artists?ids=" + joinIds(artistSub))).get("artists");
+            if (artistsNode.isArray()) {
+                for (JsonNode node : artistsNode) {
+                    treeToArtist(node, true);
                 }
-                progress += (float) workingIds.size() / size * 100;
-                progressTracker.updateProgress((int) progress);
-                workingIds.clear();
             }
-        }
-        progressTracker.updateProgress(100);
+        }, progressTracker);
     }
 
     public synchronized void updateAlbum(Album album)
@@ -474,38 +415,18 @@ public class SpotifyClient
         treeToAlbum(apiToTree(makeUri("https://api.spotify.com/v1/albums/" + album.getId())), true);
     }
 
-    public synchronized void updateAlbums(Collection<Album> albums, ProgressTracker progressTracker)
+    public synchronized void updateAlbums(List<Album> albums, ProgressTracker progressTracker)
     throws IOException, SpotifyClientException
     {
-        Iterator<Album> it = albums.iterator();
-        Set<String> workingIds = new HashSet<>();
-        Album album;
-        JsonNode albumsNode;
-        final int size = albums.size();
-        float progress = 0;
-        progressTracker.updateProgress(0);
-
-        while (it.hasNext()) {
-            while (it.hasNext() && workingIds.size() < MAXIMUM_ALBUM_IDS_REQUEST) {
-                album = it.next();
-                workingIds.add(album.getId());
-            }
-
-            if (workingIds.isEmpty()) {
-                break;
-            } else {
-                albumsNode = apiToTree(makeUri("https://api.spotify.com/v1/albums?ids=" + String.join(",", workingIds))).get("albums");
-                if (albumsNode.isArray()) {
-                    for (JsonNode node : albumsNode) {
-                        treeToAlbum(node, true);
-                    }
+        doIntervals(MAXIMUM_ALBUM_IDS_REQUEST, albums, (albumSub) -> {
+            JsonNode albumsNode = apiToTree(makeUri("https://api.spotify.com/v1/albums?ids="
+                    + joinIds(albumSub))).get("albums");
+            if (albumsNode.isArray()) {
+                for (JsonNode node : albumsNode) {
+                    treeToAlbum(node, true);
                 }
-                progress += (float) workingIds.size() / size * 100;
-                progressTracker.updateProgress((int) progress);
-                workingIds.clear();
             }
-        }
-        progressTracker.updateProgress(100);
+        }, progressTracker);
     }
 
     private URL[] treeToImages(JsonNode node)
@@ -748,6 +669,7 @@ public class SpotifyClient
     {
         final int length = list.size();
         int actualEnd;
+        progressTracker.updateProgress(0);
         for (int start = 0, end = intervalSize;
              start < length; start = end, end += intervalSize) {
             if (start == end) break;
@@ -764,6 +686,7 @@ public class SpotifyClient
     {
         final int length = list.size();
         int actualEnd;
+        progressTracker.updateProgress(0);
         for (int start = 0, end = intervalSize;
              start < length; start = end, end += intervalSize) {
             if (start == end) break;
@@ -782,5 +705,10 @@ public class SpotifyClient
         } catch (URISyntaxException e) {
             throw new SpotifyAPIResponseException(e);
         }
+    }
+
+    private static <T extends AbstractSpotifyResource> String joinIds(List<T> list)
+    {
+        return list.stream().map(AbstractSpotifyResource::getId).collect(Collectors.joining(","));
     }
 }
