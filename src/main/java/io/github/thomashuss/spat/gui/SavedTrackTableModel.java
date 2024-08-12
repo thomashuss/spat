@@ -125,7 +125,7 @@ class SavedTrackTableModel
 
     void deleteEntries(int startIndex, int numEntries)
     {
-        if (numEntries > 0) {
+        if (numEntries > 0 && startIndex >= 0) {
             main.commitEdit(new UnsaveTracks(startIndex, numEntries));
         }
     }
