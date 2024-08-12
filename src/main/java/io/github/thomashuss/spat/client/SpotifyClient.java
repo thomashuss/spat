@@ -99,7 +99,7 @@ public class SpotifyClient
             } while ((root = root.get("next")) != null
                     && (apiUrl = root.asText(null)) != null
                     && (root = apiToTree(makeUri(apiUrl))) != null);
-            library.markModified(p);
+            library.markContentsModified(p);
         }
         progressTracker.updateProgress(100);
     }
@@ -261,7 +261,7 @@ public class SpotifyClient
             apiUrl = (root = root.get("next")) != null ? root.asText(null) : null;
         } while (apiUrl != null);
         ls.reverse();
-        library.markModified(ls);
+        library.markContentsModified(ls);
         progressTracker.updateProgress(100);
     }
 

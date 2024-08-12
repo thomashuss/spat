@@ -124,7 +124,7 @@ class PlaylistSelectionFrame
             Playlist p = playlists.get(i);
             synchronized (main.client) {
                 p.clearResources();
-                main.library.markModified(p);
+                main.library.markContentsModified(p);
             }
             updateOtherModel(p);
         }

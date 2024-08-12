@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -58,6 +57,8 @@ public class Library
      * Purely heuristic.
      */
     private static final int CHECK_SIZE_FREQ = 1000;
+    private static final byte SHOULD_SAVE = 1;
+    private static final byte SHOULD_SAVE_CONTENTS = 2;
 
     /**
      * No need for a thread safe instance due to synchronization on lmdb env.
@@ -89,7 +90,8 @@ public class Library
     private final ResourceKV<Label> labelDb;
     private final ResourceKV<Playlist> playlistDb;
     private final ResourceKV<Track> trackDb;
-    private final Set<LibraryResource> needsSave;
+    private final Map<LibraryResource, Byte> needsSaveStatus;
+    private final Queue<Runnable> needsSave;
     private final ByteBuffer keyBuf;
     private final MemoryBuffer keyMemBuf;
     private ByteBuffer valBuf = ByteBuffer.allocateDirect(1024);
@@ -104,7 +106,8 @@ public class Library
     {
         this.state = state;
         needsFinalize = new ArrayDeque<>();
-        needsSave = new HashSet<>();
+        needsSave = new ArrayDeque<>();
+        needsSaveStatus = new HashMap<>();
 
         env = Env.create()
                 .setMapSize(state.mapSize)
@@ -407,34 +410,93 @@ public class Library
         return new Cleanup();
     }
 
-    public void markModified(LibraryResource resource)
+    private <T extends LibraryResource> void markModified(final ResourceKV<T> db, final T t)
     {
-        needsSave.add(resource);
+        synchronized (env) {
+            if (needsSaveStatus.putIfAbsent(t, SHOULD_SAVE) == null)
+                needsSave.add(() -> db.save(t));
+        }
+    }
+
+    public void markModified(LibraryResource lr)
+    {
+        if (lr instanceof Album r) markModified(r);
+        else if (lr instanceof Artist r) markModified(r);
+        else if (lr instanceof Genre r) markModified(r);
+        else if (lr instanceof Label r) markModified(r);
+        else if (lr instanceof Playlist r) markContentsModified(r);
+        else if (lr instanceof SavedResourceCollection<?> r) markContentsModified(r);
+        else if (lr instanceof Track r) markModified(r);
+    }
+
+    public void markModified(Album a)
+    {
+        markModified(albumDb, a);
+    }
+
+    public void markModified(Artist a)
+    {
+        markModified(artistDb, a);
+    }
+
+    public void markModified(Genre g)
+    {
+        markModified(genreDb, g);
+    }
+
+    public void markModified(Label l)
+    {
+        markModified(labelDb, l);
+    }
+
+    public void markModified(Playlist p)
+    {
+        synchronized (env) {
+            Byte curr = needsSaveStatus.getOrDefault(p, (byte) 0);
+            if ((curr & SHOULD_SAVE) == 0) {
+                needsSave.add(() -> playlistDb.save(p));
+                needsSaveStatus.put(p, (byte) (curr | SHOULD_SAVE));
+            }
+        }
+    }
+
+    public void markContentsModified(Playlist p)
+    {
+        synchronized (env) {
+            Byte curr = needsSaveStatus.getOrDefault(p, (byte) 0);
+            if ((curr & SHOULD_SAVE_CONTENTS) == 0) {
+                needsSave.add(() -> depopulateSavedResources(p));
+                needsSaveStatus.put(p, (byte) (curr | SHOULD_SAVE_CONTENTS));
+            }
+        }
+    }
+
+    public void markContentsModified(SavedResourceCollection<?> src)
+    {
+        synchronized (env) {
+            if (needsSaveStatus.putIfAbsent(src, SHOULD_SAVE_CONTENTS) == null)
+                needsSave.add(() -> depopulateSavedResources(src));
+        }
+    }
+
+    public void markModified(Track t)
+    {
+        markModified(trackDb, t);
     }
 
     public boolean hasModified()
     {
-        return !needsSave.isEmpty();
+        synchronized (env) {
+            return !needsSave.isEmpty();
+        }
     }
 
     public void saveModified()
     {
         synchronized (env) {
-            Iterator<LibraryResource> it = needsSave.iterator();
-            LibraryResource lr;
-            while (it.hasNext()) {
-                lr = it.next();
-                if (lr instanceof Album) albumDb.save((Album) lr);
-                else if (lr instanceof Artist) artistDb.save((Artist) lr);
-                else if (lr instanceof Genre) genreDb.save((Genre) lr);
-                else if (lr instanceof Label) labelDb.save((Label) lr);
-                else if (lr instanceof Playlist p) {
-                    playlistDb.save(p);
-                    depopulateSavedResources(p);
-                } else if (lr instanceof SavedResourceCollection<?> src) depopulateSavedResources(src);
-                else if (lr instanceof Track) trackDb.save((Track) lr);
-                it.remove();
-            }
+            Runnable r;
+            while ((r = needsSave.poll()) != null)
+                r.run();
             growMap();
         }
     }
