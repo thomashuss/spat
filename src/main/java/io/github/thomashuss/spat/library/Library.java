@@ -396,6 +396,12 @@ public class Library
         handleFinalizationQueue();
     }
 
+    public void deletePlaylist(Playlist playlist)
+    {
+        playlistDb.remove(playlist.getKey());
+        savedResourceListDb.delete(keyBuf.rewind());
+    }
+
     public Cleanup cleanUnusedResources()
     {
         return new Cleanup();

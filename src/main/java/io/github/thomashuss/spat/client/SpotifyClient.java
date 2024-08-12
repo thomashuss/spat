@@ -298,7 +298,8 @@ public class SpotifyClient
     }
 
     /**
-     * Downloads metadata for all the user's playlists except Liked Songs to the library.
+     * Downloads metadata for all the user's playlists except Liked Songs to the library, and deletes from the library
+     * playlists which were deleted from Spotify.
      *
      * @throws IOException                on I/O errors
      * @throws SpotifyClientHttpException if there is an unexpected HTTP error when communicating with Spotify
@@ -310,7 +311,7 @@ public class SpotifyClient
         JsonNode root;
         String nextUrl = "https://api.spotify.com/v1/me/playlists";
         Set<Playlist> deleted = new HashSet<>();
-        library.getPlaylists(deleted);  // TODO: actually delete
+        library.getPlaylists(deleted);
         int size = 0;
         float progress = 0;
         progressTracker.updateProgress(0);
@@ -333,6 +334,7 @@ public class SpotifyClient
             nextUrl = (root = root.get("next")) != null ? root.asText(null) : null;
         } while (nextUrl != null);
         progressTracker.updateProgress(100);
+        deleted.forEach(library::deletePlaylist);
         return deleted;
     }
 
