@@ -21,11 +21,18 @@ public class SaveTracks
 {
     private final ZonedDateTime addedAt;
     private final List<Track> tracks;
-    private SavedResourceCollection<Track> ls;
-    private int index;
+    private final SavedResourceCollection<Track> ls;
+    private final int index;
 
-    public SaveTracks(List<Track> tracks)
+    public SaveTracks(Library library, List<Track> tracks)
+    throws IllegalEditException
     {
+        ls = library.getLikedSongs();
+        index = ls.getNumResources();
+
+        if (ls.containsAnyOf(tracks))
+            throw new IllegalEditException(ls, "Tracks are already saved");
+
         this.tracks = new ArrayList<>(tracks.size());
         ListIterator<Track> li = tracks.listIterator(tracks.size());
         while (li.hasPrevious()) {
@@ -55,10 +62,6 @@ public class SaveTracks
     @Override
     void commit(Library library)
     {
-        if (ls == null) {
-            ls = library.getLikedSongs();
-            index = ls.getNumResources();
-        }
         library.saveTracksToCollection(tracks, addedAt, ls);
     }
 

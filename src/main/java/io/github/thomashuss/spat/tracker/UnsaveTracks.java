@@ -23,23 +23,36 @@ public class UnsaveTracks
         implements TrackRemoval
 {
     private final List<Integer> indices;
-    private List<SavedResource<Track>> sr;
-    private SavedResourceCollection<Track> ls;
-    private byte isSequential;
+    private final List<SavedResource<Track>> sr;
+    private final SavedResourceCollection<Track> ls;
+    private final boolean isSequential;
 
-    public UnsaveTracks(List<Integer> indices)
+    public UnsaveTracks(Library library, List<Integer> indices)
     {
+        ls = library.getLikedSongs();
         this.indices = indices;
-        isSequential = 1;
         indices.sort(Comparator.reverseOrder());
+        boolean isSequential = true;
+        sr = new ArrayList<>(indices.size());
+        int prev = -1;
+        for (int i : indices) {
+            sr.add(ls.removeResource(i));
+            if (isSequential && prev != -1) {
+                isSequential = i == prev - 1;
+            }
+            prev = i;
+        }
+        this.isSequential = isSequential;
     }
 
-    public UnsaveTracks(int startIndex, int numEntries)
+    public UnsaveTracks(Library library, int startIndex, int numEntries)
     {
         indices = Stream.iterate(startIndex + numEntries - 1, i -> i - 1)
                 .limit(numEntries)
                 .toList();
-        isSequential = 2;
+        ls = library.getLikedSongs();
+        sr = indices.stream().map(ls::removeResource).toList();
+        isSequential = true;
     }
 
     @Override
@@ -51,7 +64,7 @@ public class UnsaveTracks
     @Override
     public boolean isSequential()
     {
-        return isSequential != 0;
+        return isSequential;
     }
 
     @Override
@@ -60,41 +73,10 @@ public class UnsaveTracks
         return Objects.requireNonNullElse(ls, null);
     }
 
-    private void populateSrDelegate()
-    {
-        sr = indices.stream().map(ls::removeResource).toList();
-    }
-
-    private void populateSrNonSequentialDelegate()
-    {
-        sr = new ArrayList<>(indices.size());
-        int prev = -1;
-        for (int i : indices) {
-            sr.add(ls.removeResource(i));
-            if (isSequential == 1 && prev != -1) {
-                isSequential = (byte) (i == prev - 1 ? 1 : 0);
-            }
-            prev = i;
-        }
-    }
-
-    private void populateSr()
-    {
-        if (isSequential == 2) populateSrDelegate();
-        else if (isSequential == 1) populateSrNonSequentialDelegate();
-    }
-
     @Override
     void commit(Library library)
     {
-        if (ls == null) {
-            ls = library.getLikedSongs();
-        }
-        if (sr == null) {
-            populateSr();
-        } else {
-            indices.forEach(ls::removeResource);
-        }
+        indices.forEach(ls::removeResource);
     }
 
     @Override

@@ -3,8 +3,11 @@ package io.github.thomashuss.spat.gui;
 import io.github.thomashuss.spat.library.Playlist;
 import io.github.thomashuss.spat.tracker.AddTracks;
 import io.github.thomashuss.spat.tracker.Edit;
+import io.github.thomashuss.spat.tracker.IllegalEditException;
 import io.github.thomashuss.spat.tracker.MoveTracks;
 import io.github.thomashuss.spat.tracker.RemoveTracks;
+
+import javax.swing.JOptionPane;
 
 class PlaylistTrackTableModel
         extends SavedTrackTableModel
@@ -76,8 +79,12 @@ class PlaylistTrackTableModel
                     return true;
                 }
             } else {
-                main.commitEdit(new AddTracks((Playlist) collection, transferable.getTracks(), targetRow));
-                return true;
+                try {
+                    main.commitEdit(new AddTracks((Playlist) collection, transferable.getTracks(), targetRow));
+                    return true;
+                } catch (IllegalEditException e) {
+                    JOptionPane.showInternalMessageDialog(main.desktopPane, e.getReason(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
             return false;
         }

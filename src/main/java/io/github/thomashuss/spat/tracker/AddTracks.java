@@ -22,7 +22,10 @@ public class AddTracks
     private final int index;
 
     public AddTracks(Playlist playlist, List<Track> tracks, int index)
+    throws IllegalEditException
     {
+        if (playlist.containsAnyOf(tracks))
+            throw new IllegalEditException(playlist, "Tracks are already saved");
         this.playlist = playlist;
         this.tracks = tracks;
         this.index = index;

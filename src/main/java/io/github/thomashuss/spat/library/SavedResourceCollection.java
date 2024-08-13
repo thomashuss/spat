@@ -6,8 +6,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Any user-defined collection of <code>LibraryResource</code>s.
@@ -138,6 +140,16 @@ public class SavedResourceCollection<T extends AbstractSpotifyResource>
                 }
             }
         }
+    }
+
+    public boolean containsAnyOf(List<T> testResources)
+    {
+        final Predicate<T> test = testResources.size() <= 8
+                ? testResources::contains : new HashSet<>(testResources)::contains;
+        for (SavedResource<T> sr : resources) {
+            if (test.test(sr.getResource())) return true;
+        }
+        return false;
     }
 
     public void reverse()

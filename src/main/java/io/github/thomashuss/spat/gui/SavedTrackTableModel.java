@@ -4,6 +4,7 @@ import io.github.thomashuss.spat.library.Artist;
 import io.github.thomashuss.spat.library.SavedResourceCollection;
 import io.github.thomashuss.spat.library.Track;
 import io.github.thomashuss.spat.tracker.Edit;
+import io.github.thomashuss.spat.tracker.IllegalEditException;
 import io.github.thomashuss.spat.tracker.SaveTracks;
 import io.github.thomashuss.spat.tracker.TrackInsertion;
 import io.github.thomashuss.spat.tracker.TrackRemoval;
@@ -11,6 +12,7 @@ import io.github.thomashuss.spat.tracker.UnsaveTracks;
 
 import javax.annotation.Nonnull;
 import javax.swing.JComponent;
+import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.TransferHandler;
 import java.awt.datatransfer.DataFlavor;
@@ -131,7 +133,7 @@ class SavedTrackTableModel
     void deleteEntries(int startIndex, int numEntries)
     {
         if (numEntries > 0 && startIndex >= 0) {
-            main.commitEdit(new UnsaveTracks(startIndex, numEntries));
+            main.commitEdit(new UnsaveTracks(main.library, startIndex, numEntries));
         }
     }
 
@@ -160,8 +162,12 @@ class SavedTrackTableModel
         protected boolean commitDrop(boolean isIntraModel, int targetRow, TrackTransferable transferable)
         {
             if (!isIntraModel) {
-                main.commitEdit(new SaveTracks(transferable.getTracks()));
-                return true;
+                try {
+                    main.commitEdit(new SaveTracks(main.library, transferable.getTracks()));
+                    return true;
+                } catch (IllegalEditException e) {
+                    JOptionPane.showInternalMessageDialog(main.desktopPane, e.getReason(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
             return false;
         }
