@@ -48,7 +48,7 @@ class PlaylistTrackTableModel
     void deleteEntries(int startIndex, int numEntries)
     {
         if (numEntries > 0) {
-            main.commitEdit(new RemoveTracks((Playlist) collection, startIndex, numEntries));
+            main.commitEdit(RemoveTracks.of((Playlist) collection, startIndex, numEntries));
         }
     }
 
@@ -74,13 +74,13 @@ class PlaylistTrackTableModel
         {
             if (isIntraModel) {
                 if (targetRow > transferable.rangeStart + transferable.rangeLength || targetRow < transferable.rangeStart) {
-                    main.commitEdit(new MoveTracks((Playlist) collection, targetRow,
+                    main.commitEdit(MoveTracks.of((Playlist) collection, targetRow,
                             transferable.rangeStart, transferable.rangeLength));
                     return true;
                 }
             } else {
                 try {
-                    main.commitEdit(new AddTracks((Playlist) collection, transferable.getTracks(), targetRow));
+                    main.commitEdit(AddTracks.of((Playlist) collection, transferable.getTracks(), targetRow));
                     return true;
                 } catch (IllegalEditException e) {
                     JOptionPane.showInternalMessageDialog(main.desktopPane, e.getReason(), "Error", JOptionPane.ERROR_MESSAGE);

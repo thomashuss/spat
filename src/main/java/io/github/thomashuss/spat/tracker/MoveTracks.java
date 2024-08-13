@@ -17,13 +17,19 @@ public class MoveTracks
     public final int rangeLength;
     private final Playlist playlist;
 
-    public MoveTracks(Playlist playlist, int insertBefore,
+    MoveTracks(Playlist playlist, int insertBefore,
                       int rangeStart, int rangeLength)
     {
         this.playlist = playlist;
         this.insertBefore = insertBefore;
         this.rangeStart = rangeStart;
         this.rangeLength = rangeLength;
+    }
+
+    public static MoveTracks of(Playlist playlist, int insertBefore,
+                                int rangeStart, int rangeLength)
+    {
+        return new MoveTracks(playlist, insertBefore, rangeStart, rangeLength);
     }
 
     @Override

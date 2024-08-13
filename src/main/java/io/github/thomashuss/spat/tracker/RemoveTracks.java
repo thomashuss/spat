@@ -26,7 +26,7 @@ public class RemoveTracks
     private final Playlist playlist;
     private final List<Integer> indices;
 
-    public RemoveTracks(Playlist playlist, List<Integer> indices)
+    RemoveTracks(Playlist playlist, List<Integer> indices)
     {
         this.playlist = playlist;
         this.indices = indices;
@@ -44,7 +44,12 @@ public class RemoveTracks
         this.isSequential = isSequential;
     }
 
-    public RemoveTracks(Playlist playlist, int startIndex, int numEntries)
+    public static RemoveTracks of(Playlist playlist, List<Integer> indices)
+    {
+        return new RemoveTracks(playlist, indices);
+    }
+
+    RemoveTracks(Playlist playlist, int startIndex, int numEntries)
     {
         this.playlist = playlist;
         indices = Stream.iterate(startIndex + numEntries - 1, i -> i - 1)
@@ -52,6 +57,11 @@ public class RemoveTracks
                 .toList();
         isSequential = true;
         sr = indices.stream().map(playlist::getSavedResourceAt).toList();
+    }
+
+    public static RemoveTracks of(Playlist playlist, int startIndex, int numEntries)
+    {
+        return new RemoveTracks(playlist, startIndex, numEntries);
     }
 
     @Override

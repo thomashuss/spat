@@ -21,15 +21,20 @@ public class AddTracks
     private final List<Track> tracks;
     private final int index;
 
-    public AddTracks(Playlist playlist, List<Track> tracks, int index)
-    throws IllegalEditException
+    AddTracks(Playlist playlist, List<Track> tracks, int index)
     {
-        if (playlist.containsAnyOf(tracks))
-            throw new IllegalEditException(playlist, "Tracks are already saved");
         this.playlist = playlist;
         this.tracks = tracks;
         this.index = index;
         this.addedAt = ZonedDateTime.now();
+    }
+
+    public static AddTracks of(Playlist playlist, List<Track> tracks, int index)
+    throws IllegalEditException
+    {
+        if (playlist.containsAnyOf(tracks))
+            throw new IllegalEditException(playlist, "Tracks are already saved");
+        return new AddTracks(playlist, tracks, index);
     }
 
     @Override

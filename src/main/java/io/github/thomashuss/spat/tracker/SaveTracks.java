@@ -24,21 +24,25 @@ public class SaveTracks
     private final SavedResourceCollection<Track> ls;
     private final int index;
 
-    public SaveTracks(Library library, List<Track> tracks)
-    throws IllegalEditException
+    SaveTracks(SavedResourceCollection<Track> ls, List<Track> tracks)
     {
-        ls = library.getLikedSongs();
+        this.ls = ls;
         index = ls.getNumResources();
-
-        if (ls.containsAnyOf(tracks))
-            throw new IllegalEditException(ls, "Tracks are already saved");
-
         this.tracks = new ArrayList<>(tracks.size());
         ListIterator<Track> li = tracks.listIterator(tracks.size());
         while (li.hasPrevious()) {
             this.tracks.add(li.previous());
         }
         this.addedAt = ZonedDateTime.now();
+    }
+
+    public static SaveTracks of(Library library, List<Track> tracks)
+    throws IllegalEditException
+    {
+        SavedResourceCollection<Track> ls = library.getLikedSongs();
+        if (ls.containsAnyOf(tracks))
+            throw new IllegalEditException(ls, "Tracks are already saved");
+        return new SaveTracks(ls, tracks);
     }
 
     @Override

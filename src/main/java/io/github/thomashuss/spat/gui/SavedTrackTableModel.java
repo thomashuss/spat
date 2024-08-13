@@ -133,7 +133,7 @@ class SavedTrackTableModel
     void deleteEntries(int startIndex, int numEntries)
     {
         if (numEntries > 0 && startIndex >= 0) {
-            main.commitEdit(new UnsaveTracks(main.library, startIndex, numEntries));
+            main.commitEdit(UnsaveTracks.of(main.library, startIndex, numEntries));
         }
     }
 
@@ -163,7 +163,7 @@ class SavedTrackTableModel
         {
             if (!isIntraModel) {
                 try {
-                    main.commitEdit(new SaveTracks(main.library, transferable.getTracks()));
+                    main.commitEdit(SaveTracks.of(main.library, transferable.getTracks()));
                     return true;
                 } catch (IllegalEditException e) {
                     JOptionPane.showInternalMessageDialog(main.desktopPane, e.getReason(), "Error", JOptionPane.ERROR_MESSAGE);

@@ -27,9 +27,9 @@ public class UnsaveTracks
     private final SavedResourceCollection<Track> ls;
     private final boolean isSequential;
 
-    public UnsaveTracks(Library library, List<Integer> indices)
+    UnsaveTracks(SavedResourceCollection<Track> ls, List<Integer> indices)
     {
-        ls = library.getLikedSongs();
+        this.ls = ls;
         this.indices = indices;
         indices.sort(Comparator.reverseOrder());
         boolean isSequential = true;
@@ -45,14 +45,24 @@ public class UnsaveTracks
         this.isSequential = isSequential;
     }
 
-    public UnsaveTracks(Library library, int startIndex, int numEntries)
+    public static UnsaveTracks of(Library library, List<Integer> indices)
+    {
+        return new UnsaveTracks(library.getLikedSongs(), indices);
+    }
+
+    UnsaveTracks(SavedResourceCollection<Track> ls, int startIndex, int numEntries)
     {
         indices = Stream.iterate(startIndex + numEntries - 1, i -> i - 1)
                 .limit(numEntries)
                 .toList();
-        ls = library.getLikedSongs();
+        this.ls = ls;
         sr = indices.stream().map(ls::removeResource).toList();
         isSequential = true;
+    }
+
+    public static UnsaveTracks of(Library library, int startIndex, int numEntries)
+    {
+        return new UnsaveTracks(library.getLikedSongs(), startIndex, numEntries);
     }
 
     @Override
