@@ -84,11 +84,16 @@ class SavedTrackTableModel
         return switch (col) {
             case 1 -> {
                 Artist[] artists = get(row).getResource().getArtists();
-                if (artists.length > 1)
-                    yield Arrays.stream(artists).map(Artist::getName)
+                yield switch (artists.length) {
+                    case 4 -> artists[0].getName() + ", " + artists[1].getName() + ", " + artists[2].getName()
+                            + ", " + artists[3].getName();
+                    case 3 -> artists[0].getName() + ", " + artists[1].getName() + ", " + artists[2].getName();
+                    case 2 -> artists[0].getName() + ", " + artists[1].getName();
+                    case 1 -> artists[0].getName();
+                    case 0 -> "";
+                    default -> Arrays.stream(artists).map(Artist::getName)
                         .collect(Collectors.joining(", "));
-                else
-                    yield artists[0].getName();
+                };
             }
             case 2 -> get(row).getResource().getAlbum().getName();
             default -> super.getValueAt(row, col);
