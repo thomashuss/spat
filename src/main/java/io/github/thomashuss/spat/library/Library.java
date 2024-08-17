@@ -912,10 +912,12 @@ public class Library
             recoverable = true;
         }
 
-        public Stream<? extends LibraryResource> getResourceStream()
+        public void forEachResource(Consumer<LibraryResource> func)
         {
-            return Stream.of(tracksToRemove.stream(), albumsToRemove.stream(),
-                    artistsToRemove.stream(), genresToRemove.stream(), labelsToRemove.stream()).flatMap(s -> s);
+            Stream.of(tracksToRemove.stream(), albumsToRemove.stream(),
+                    artistsToRemove.stream(), genresToRemove.stream(), labelsToRemove.stream())
+                    .flatMap(s -> s)
+                    .forEach(func);
         }
 
         public synchronized void clean()

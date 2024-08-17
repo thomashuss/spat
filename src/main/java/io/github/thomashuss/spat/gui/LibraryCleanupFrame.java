@@ -115,9 +115,7 @@ class LibraryCleanupFrame
         public CleanupListModel()
         {
             super();
-            for (Iterator<? extends LibraryResource> it = cleanup.getResourceStream().iterator(); it.hasNext(); ) {
-                addElement(it.next());
-            }
+            cleanup.forEachResource(this::addElement);
         }
 
         @Override
