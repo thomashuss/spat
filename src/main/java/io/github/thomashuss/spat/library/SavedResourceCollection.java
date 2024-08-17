@@ -5,10 +5,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -103,9 +105,9 @@ public class SavedResourceCollection<T extends AbstractSpotifyResource>
         resources.addAll(i, r);
     }
 
-    public SavedResource<T> removeResource(int index)
+    public void removeResource(int index)
     {
-        return resources.remove(index);
+        resources.remove(index);
     }
 
     public void removeSavedResourcesInRange(int start, int end)
@@ -142,9 +144,9 @@ public class SavedResourceCollection<T extends AbstractSpotifyResource>
         }
     }
 
-    public boolean containsAnyOf(List<T> testResources)
+    public boolean containsAnyOf(Collection<T> testResources)
     {
-        final Predicate<T> test = testResources.size() <= 8
+        final Predicate<T> test = (testResources instanceof Set || testResources.size() <= 8)
                 ? testResources::contains : new HashSet<>(testResources)::contains;
         for (SavedResource<T> sr : resources) {
             if (test.test(sr.getResource())) return true;
