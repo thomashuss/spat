@@ -14,7 +14,6 @@ import org.lmdbjava.Txn;
 import java.io.IOException;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Array;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.time.ZonedDateTime;
@@ -180,14 +179,13 @@ public class Library
         };
     }
 
-    private static <F extends LibraryResource> F[] readResourceArray(Class<F> fieldClass,
+    private static <F extends LibraryResource> F[] readResourceArray(Function<Integer, F[]> fieldArrayConstructor,
                                                                      String[] keys,
                                                                      Function<String, F> func)
     {
         if (keys != null) {
             int len = keys.length;
-            @SuppressWarnings("unchecked")
-            F[] ret = (F[]) Array.newInstance(fieldClass, len);
+            F[] ret = fieldArrayConstructor.apply(len);
             for (int i = 0; i < len; i++) {
                 ret[i] = func.apply(keys[i]);
             }
@@ -553,7 +551,7 @@ public class Library
         writeResourceArray(buffer, album.getGenres());
     }
 
-    private <T> Function<MemoryBuffer, T> readerFor(Class<T> valueClass)
+    private static <T> Function<MemoryBuffer, T> readerFor(Class<T> valueClass)
     {
         return buffer -> valueClass.cast(fury.deserialize(buffer));
     }
@@ -566,16 +564,16 @@ public class Library
         final String[] genreKeys = readResourceKeyArray(buffer);
         return () -> {
             readResourceField(labelKey, labelDb::read, album::setLabel);
-            album.setArtists(readResourceArray(Artist.class, artistKeys, artistDb::read));
-            album.setTracks(readResourceArray(Track.class, trackKeys, trackDb::read));
-            album.setGenres(readResourceArray(Genre.class, genreKeys, genreDb::read));
+            album.setArtists(readResourceArray(Artist[]::new, artistKeys, artistDb::read));
+            album.setTracks(readResourceArray(Track[]::new, trackKeys, trackDb::read));
+            album.setGenres(readResourceArray(Genre[]::new, genreKeys, genreDb::read));
         };
     }
 
     private Runnable artistFinalizer(final Artist artist, MemoryBuffer buffer)
     {
         final String[] genreKeys = readResourceKeyArray(buffer);
-        return () -> artist.setGenres(readResourceArray(Genre.class, genreKeys, genreDb::read));
+        return () -> artist.setGenres(readResourceArray(Genre[]::new, genreKeys, genreDb::read));
     }
 
     private Runnable trackFinalizer(final Track track, MemoryBuffer buffer)
@@ -584,7 +582,7 @@ public class Library
         final String[] artistKeys = readResourceKeyArray(buffer);
         return () -> {
             readResourceField(albumKey, albumDb::read, track::setAlbum);
-            track.setArtists(readResourceArray(Artist.class, artistKeys, artistDb::read));
+            track.setArtists(readResourceArray(Artist[]::new, artistKeys, artistDb::read));
         };
     }
 
