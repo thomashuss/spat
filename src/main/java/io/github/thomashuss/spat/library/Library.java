@@ -33,7 +33,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Coherently tracks all library resources.
@@ -260,52 +259,39 @@ public class Library
         return ret;
     }
 
-    public void saveAlbum(ZonedDateTime addedAt, Album album)
+    private static <T extends AbstractSpotifyResource> List<SavedResource<T>> makeSrList(List<T> resources,
+                                                                                         ZonedDateTime addedAt)
     {
-        SavedResourceCollection<Album> savedAlbums = getSavedAlbums();
-        if (album != null) savedAlbums.addResource(new SavedAlbum(addedAt, album));
+        return resources.stream()
+                .map((Function<T, SavedResource<T>>) (t) -> SavedResource.of(addedAt, t))
+                .toList();
     }
 
-    public void saveTracksToCollection(List<Track> tracks, ZonedDateTime addedAt,
-                                       SavedResourceCollection<Track> collection)
+    public <T extends AbstractSpotifyResource> void saveResourcesToCollection(List<T> resources, ZonedDateTime addedAt,
+                                                                              SavedResourceCollection<T> collection)
     {
-        collection.addResources(tracks.stream().map((t) -> new SavedTrack(addedAt, t))
-                .collect(Collectors.toUnmodifiableList()));
+        collection.addResources(makeSrList(resources, addedAt));
     }
 
-    public void saveTracksToCollection(List<Track> tracks, ZonedDateTime addedAt,
-                                       SavedResourceCollection<Track> collection, int i)
+    public <T extends AbstractSpotifyResource> void saveResourcesToCollection(List<T> resources, ZonedDateTime addedAt,
+                                                                              SavedResourceCollection<T> collection,
+                                                                              int i)
     {
-        collection.addResourcesAt(tracks.stream().map((t) -> new SavedTrack(addedAt, t))
-                .collect(Collectors.toUnmodifiableList()), i);
+        collection.addResourcesAt(makeSrList(resources, addedAt), i);
     }
 
-    public void saveTrackToCollection(Track track, ZonedDateTime addedAt, SavedResourceCollection<Track> collection)
+    public <T extends AbstractSpotifyResource> void saveResourceToCollection(T resource,
+                                                                             ZonedDateTime addedAt,
+                                                                             SavedResourceCollection<T> collection)
     {
-        if (track != null) collection.addResource(new SavedTrack(addedAt, track));
+        if (resource != null) collection.addResource(SavedResource.of(addedAt, resource));
     }
 
-    public void saveTrackToCollection(SavedTrack sr, SavedResourceCollection<Track> collection, int i)
+    public <T extends AbstractSpotifyResource> void saveResourceToCollection(SavedResource<T> sr,
+                                                                             SavedResourceCollection<T> collection,
+                                                                             int i)
     {
         if (sr != null) collection.addResourceAt(sr, i);
-    }
-
-    public void unsaveAlbum(Album album)
-    {
-        SavedResourceCollection<Album> savedAlbums = getSavedAlbums();
-        if (album != null) savedAlbums.removeResource(album);
-    }
-
-    public void unsaveAlbum(int i)
-    {
-        SavedResourceCollection<Album> savedAlbums = getSavedAlbums();
-        savedAlbums.removeResource(i);
-    }
-
-    public void clearSavedAlbums()
-    {
-        SavedResourceCollection<Album> savedAlbums = getSavedAlbums();
-        savedAlbums.clearResources();
     }
 
     public Album albumOf(String id)

@@ -275,8 +275,8 @@ public class SpotifyClient
         int size = 0;
         float progress = 0;
         progressTracker.updateProgress(0);
+        SavedResourceCollection<Album> sa = library.getSavedAlbums();
 
-        library.clearSavedAlbums();
         do {
             root = apiToTree(makeUri(apiUrl));
             if (size == 0) {
@@ -287,8 +287,8 @@ public class SpotifyClient
             items = root.get("items");
             if (items != null && items.isArray()) {
                 for (JsonNode savedAlbumNode : items) {
-                    library.saveAlbum(ZonedDateTime.parse(savedAlbumNode.get("added_at").asText()),
-                            treeToAlbum(savedAlbumNode.get("album"), true));
+                    library.saveResourceToCollection(treeToAlbum(savedAlbumNode.get("album"), true),
+                            ZonedDateTime.parse(savedAlbumNode.get("added_at").asText()), sa);
                 }
                 progress += (float) items.size() / size * 100;
                 progressTracker.updateProgress((int) progress);
@@ -631,7 +631,7 @@ public class SpotifyClient
                 if (!trackNode.has("added_at")) {
                     track = treeToTrack(trackNode, false, null);
                     if (track != null) {
-                        library.saveTrackToCollection(track,
+                        library.saveResourceToCollection(track,
                                 ZonedDateTime.parse(node.get("added_at").asText()), c);
                     }
                 }
