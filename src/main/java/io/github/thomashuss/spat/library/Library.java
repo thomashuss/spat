@@ -34,7 +34,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Coherently tracks all library resources.
@@ -915,10 +914,11 @@ public class Library
 
         public void forEachResource(Consumer<LibraryResource> func)
         {
-            Stream.of(tracksToRemove.stream(), albumsToRemove.stream(),
-                    artistsToRemove.stream(), genresToRemove.stream(), labelsToRemove.stream())
-                    .flatMap(s -> s)
-                    .forEach(func);
+            tracksToRemove.forEach(func);
+            albumsToRemove.forEach(func);
+            artistsToRemove.forEach(func);
+            genresToRemove.forEach(func);
+            labelsToRemove.forEach(func);
         }
 
         public synchronized void clean()
