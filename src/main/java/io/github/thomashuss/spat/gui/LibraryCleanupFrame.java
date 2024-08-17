@@ -124,10 +124,11 @@ class LibraryCleanupFrame
         public void removeElementAt(int i)
         {
             LibraryResource resource = remove(i);
-            Library.Cleanup.Recovered recovered = cleanup.keep(resource);
+            Iterator<LibraryResource> recovered = cleanup.keep(resource).iterator();
             recoveredModel.addElement(resource);
-            while ((recovered = recovered.next()) != null) {
-                resource = recovered.resource;
+            if (recovered.hasNext()) recovered.next();
+            while (recovered.hasNext()) {
+                resource = recovered.next();
                 removeElement(resource);
                 recoveredModel.addElement(resource);
             }

@@ -878,9 +878,8 @@ public class Library
         private final Set<Genre> genresToRemove;
         private final Set<Label> labelsToRemove;
         private final Set<Track> tracksToRemove;
+        private final List<LibraryResource> recovered;
         private boolean recoverable = false;
-        private Recovered recovered;
-        private Recovered recoveredTail;
 
         private Cleanup()
         {
@@ -909,6 +908,7 @@ public class Library
                 keepTrack(s.getResource());
             }
 
+            recovered = new ArrayList<>();
             recoverable = true;
         }
 
@@ -929,17 +929,12 @@ public class Library
 
         private void recover(LibraryResource resource)
         {
-            Recovered thisRecovered = new Recovered(resource);
-            if (recoveredTail == null) recovered = recoveredTail = thisRecovered;
-            else {
-                recoveredTail.next = thisRecovered;
-                recoveredTail = thisRecovered;
-            }
+            if (recoverable) recovered.add(resource);
         }
 
-        public synchronized Recovered keep(LibraryResource lr)
+        public synchronized List<LibraryResource> keep(LibraryResource lr)
         {
-            Recovered head = recoveredTail;
+            final int left = recovered.size();
 
             if (lr instanceof Album) keepAlbum((Album) lr);
             else if (lr instanceof Artist) keepArtist((Artist) lr);
@@ -947,13 +942,13 @@ public class Library
             else if (lr instanceof Label) keepLabel((Label) lr);
             else if (lr instanceof Track) keepTrack((Track) lr);
 
-            return head == null ? recovered : head.next;
+            return recovered.subList(left, recovered.size());
         }
 
         private void keepAlbum(Album a)
         {
             if (albumsToRemove.remove(a)) {
-                if (recoverable) recover(a);
+                recover(a);
                 Track[] t = a.getTracks();
                 if (t != null) for (Track tr : t)
                     keepTrackOnly(tr);
@@ -972,7 +967,7 @@ public class Library
         private void keepArtist(Artist a)
         {
             if (artistsToRemove.remove(a)) {
-                if (recoverable) recover(a);
+                recover(a);
                 Genre[] g = a.getGenres();
                 if (g != null) for (Genre ge : g)
                     keepGenre(ge);
@@ -982,7 +977,7 @@ public class Library
         private boolean keepTrackOnly(Track t)
         {
             if (tracksToRemove.remove(t)) {
-                if (recoverable) recover(t);
+                recover(t);
                 Artist[] myArtists = t.getArtists();
                 if (myArtists != null) for (Artist a : myArtists)
                     keepArtist(a);
@@ -1000,30 +995,14 @@ public class Library
 
         private void keepGenre(Genre g)
         {
-            if (recoverable) recover(g);
+            recover(g);
             genresToRemove.remove(g);
         }
 
         private void keepLabel(Label l)
         {
-            if (recoverable) recover(l);
+            recover(l);
             labelsToRemove.remove(l);
-        }
-
-        public static final class Recovered
-        {
-            public final LibraryResource resource;
-            private Recovered next;
-
-            private Recovered(LibraryResource resource)
-            {
-                this.resource = resource;
-            }
-
-            public Recovered next()
-            {
-                return next;
-            }
         }
     }
 }
