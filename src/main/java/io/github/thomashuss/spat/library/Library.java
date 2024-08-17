@@ -21,6 +21,7 @@ import java.time.temporal.Temporal;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -944,7 +945,7 @@ public class Library
             else if (lr instanceof Label) keepLabel((Label) lr);
             else if (lr instanceof Track) keepTrack((Track) lr);
 
-            return recovered.subList(left, recovered.size());
+            return Collections.unmodifiableList(recovered.subList(left, recovered.size()));
         }
 
         private void keepAlbum(Album a)
