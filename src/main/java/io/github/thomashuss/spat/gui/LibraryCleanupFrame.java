@@ -11,9 +11,12 @@ import javax.swing.JButton;
 import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
@@ -27,16 +30,17 @@ class LibraryCleanupFrame
     private final CleanupListModel toRemoveModel;
     private final DefaultListModel<LibraryResource> recoveredModel;
     private final JList<LibraryResource> toRemoveList;
-    private final Library.Cleanup cleanup;
+    private final JProgressBar progressBar;
+    private final JButton updateButton;
+    private final JButton closeButton;
+    private final JButton keepButton;
+    private Library.Cleanup cleanup;
     private final MainGUI main;
 
     public LibraryCleanupFrame(MainGUI main)
     {
-        super("Library Cleanup", true, true, true, false);
+        super("Cleanup", true, true, true, false);
         this.main = main;
-        synchronized (main.client) {
-            this.cleanup = main.library.cleanUnusedResources();
-        }
 
         toRemoveModel = new CleanupListModel();
         toRemoveList = new JList<>(toRemoveModel);
@@ -55,13 +59,18 @@ class LibraryCleanupFrame
         JScrollPane recoveredListScrollPane = new JScrollPane(recoveredList);
         recoveredListScrollPane.setPreferredSize(LIST_SIZE);
         recoveredListScrollPane.setAlignmentX(LEFT_ALIGNMENT);
+        progressBar = new JProgressBar();
+        progressBar.setIndeterminate(true);
 
-        final JButton updateButton = new JButton("Clean");
+        updateButton = new JButton("Clean");
         updateButton.addActionListener(actionEvent -> cleanAndClose());
-        final JButton closeButton = new JButton("Cancel");
+        closeButton = new JButton("Cancel");
         closeButton.addActionListener(actionEvent -> doDefaultCloseAction());
-        final JButton keepButton = new JButton("Keep");
+        keepButton = new JButton("Keep");
         keepButton.addActionListener(actionEvent -> toRemoveModel.removeElementAt(toRemoveList.getSelectedIndex()));
+        updateButton.setEnabled(false);
+        closeButton.setEnabled(false);
+        keepButton.setEnabled(false);
 
         JPanel listPane = new JPanel();
         listPane.setLayout(new BoxLayout(listPane, BoxLayout.PAGE_AXIS));
@@ -72,6 +81,8 @@ class LibraryCleanupFrame
         listPane.add(new JLabel("The following resources are no longer needed, but will be kept:"));
         listPane.add(Box.createRigidArea(SPACER));
         listPane.add(recoveredListScrollPane);
+        listPane.add(Box.createRigidArea(SPACER));
+        listPane.add(progressBar);
         listPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JPanel buttonPane = new JPanel();
@@ -94,19 +105,64 @@ class LibraryCleanupFrame
 
         pack();
         setVisible(true);
+
+        new SwingWorker<Void, Void>()
+        {
+            @Override
+            protected Void doInBackground()
+            {
+                synchronized (LibraryCleanupFrame.this.main.client) {
+                    cleanup = LibraryCleanupFrame.this.main.library.cleanUnusedResources();
+                }
+                return null;
+            }
+
+            @Override
+            protected void done()
+            {
+                toRemoveModel.populate();
+                progressBar.setIndeterminate(false);
+                if (toRemoveModel.isEmpty()) {
+                    JOptionPane.showInternalMessageDialog(LibraryCleanupFrame.this,
+                            "Nothing to clean.", "Cleanup", JOptionPane.INFORMATION_MESSAGE);
+                    doDefaultCloseAction();
+                } else {
+                    updateButton.setEnabled(true);
+                    closeButton.setEnabled(true);
+                    keepButton.setEnabled(true);
+                }
+            }
+        }.execute();
     }
 
     private void cleanAndClose()
     {
-        synchronized (main.client) {
-            cleanup.clean();
-        }
-        ResourceFrame frame;
-        for (int i = 0; i < toRemoveModel.size(); i++) {
-            frame = main.desktopPane.getFrameForResource(toRemoveModel.get(i));
-            if (frame != null) frame.doDefaultCloseAction();
-        }
-        doDefaultCloseAction();
+        progressBar.setIndeterminate(true);
+        updateButton.setEnabled(false);
+        closeButton.setEnabled(false);
+        keepButton.setEnabled(false);
+        new SwingWorker<Void, Void>()
+        {
+            @Override
+            protected Void doInBackground()
+            {
+                synchronized (main.client) {
+                    cleanup.clean();
+                }
+                return null;
+            }
+
+            @Override
+            protected void done()
+            {
+                ResourceFrame frame;
+                for (int i = 0; i < toRemoveModel.size(); i++) {
+                    frame = main.desktopPane.getFrameForResource(toRemoveModel.get(i));
+                    if (frame != null) frame.doDefaultCloseAction();
+                }
+                doDefaultCloseAction();
+            }
+        }.execute();
     }
 
     private class CleanupListModel
@@ -115,6 +171,10 @@ class LibraryCleanupFrame
         public CleanupListModel()
         {
             super();
+        }
+
+        private void populate()
+        {
             cleanup.forEachResource(this::addElement);
         }
 
