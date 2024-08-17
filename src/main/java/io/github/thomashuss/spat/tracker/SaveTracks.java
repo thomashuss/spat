@@ -66,7 +66,7 @@ public class SaveTracks
     @Override
     void commit(Library library)
     {
-        library.saveTracksToCollection(tracks, addedAt, ls);
+        library.saveResourcesToCollection(tracks, addedAt, ls);
     }
 
     @Override
