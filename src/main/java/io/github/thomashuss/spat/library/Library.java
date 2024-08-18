@@ -92,6 +92,7 @@ public class Library
     private final Queue<Runnable> needsSave;
     private final ByteBuffer keyBuf;
     private final MemoryBuffer keyMemBuf;
+    private final ReferenceQueue<LibraryResource> rq;
     private ByteBuffer valBuf = ByteBuffer.allocateDirect(1024);
     private MemoryBuffer valMemBuf = MemoryBuffer.fromByteBuffer(valBuf);
     private int srSize = 0;
@@ -106,6 +107,7 @@ public class Library
         needsFinalize = new ArrayDeque<>();
         needsSave = new ArrayDeque<>();
         needsSaveStatus = new HashMap<>();
+        rq = new ReferenceQueue<>();
 
         env = Env.create()
                 .setMapSize(state.mapSize)
@@ -124,12 +126,12 @@ public class Library
                 fury::serialize, readerFor(Label.class));
         playlistDb = new ResourceKV<>(Playlist.class, "playlist", false,
                 fury::serialize, readerFor(Playlist.class));
-        savedResourceListDb = env.openDbi("savedResourceList", DbiFlags.MDB_CREATE);
         trackDb = new ResourceKV<>(Track.class, "track", false,
                 this::writeTrack, finalizingReaderFor(Track.class, this::trackFinalizer));
 
         fury.registerSerializer(SavedAlbum.class, new SavedResourceSerializer<>(SavedAlbum.class, SavedAlbum::new, savedResourceFinalizer(albumDb)));
         fury.registerSerializer(SavedTrack.class, new SavedResourceSerializer<>(SavedTrack.class, SavedTrack::new, savedResourceFinalizer(trackDb)));
+        savedResourceListDb = env.openDbi("savedResourceList", DbiFlags.MDB_CREATE);
     }
 
     /**
@@ -626,6 +628,16 @@ public class Library
         return keyBuf.limit(keyMemBuf.writerIndex()).rewind();
     }
 
+    private void evictResourceCacheNodes()
+    {
+        synchronized (rq) {
+            Object r;
+            while ((r = rq.poll()) != null) {
+                ((ResourceCacheNode) r).evict();
+            }
+        }
+    }
+
     private class SavedResourceSerializer<T extends SavedResource<?>>
             extends Serializer<T>
     {
@@ -665,7 +677,6 @@ public class Library
         private final boolean shouldCommitOnInstantiation;
         private final Dbi<ByteBuffer> db;
         private final Map<String, ResourceCacheNode> cache;
-        private final ReferenceQueue<LibraryResource> rq;
         private final BiConsumer<MemoryBuffer, T> serializer;
         private final Function<MemoryBuffer, T> deserializer;
 
@@ -680,7 +691,6 @@ public class Library
             synchronized (env) {
                 this.db = env.openDbi(dbKey, DbiFlags.MDB_CREATE);
             }
-            rq = new ReferenceQueue<>();
             cache = new HashMap<>();
 
             this.serializer = serializer;
@@ -714,7 +724,7 @@ public class Library
         private T readOrCreate(String key, Function<String, T> func)
         {
             synchronized (env) {
-                expungeStaleEntries();
+                evictResourceCacheNodes();
                 LibraryResource res = tryFromCache(key);
                 T obj;
                 if (res == null) {
@@ -741,7 +751,7 @@ public class Library
             ByteBuffer valBuf;
             Set<String> keysFound = new HashSet<>();
             synchronized (env) {
-                expungeStaleEntries();
+                evictResourceCacheNodes();
 
                 synchronized (rq) {
                     for (ResourceCacheNode cacheNode : cache.values()) {
@@ -796,17 +806,7 @@ public class Library
         {
             String objKey = obj.getKey();
             synchronized (rq) {
-                cache.put(objKey, new ResourceCacheNode(objKey, obj, rq));
-            }
-        }
-
-        private void expungeStaleEntries()
-        {
-            synchronized (rq) {
-                Object r;
-                while ((r = rq.poll()) != null) {
-                    cache.remove(((ResourceCacheNode) r).key);
-                }
+                cache.put(objKey, new ResourceCacheNode(objKey, obj, rq, cache::remove));
             }
         }
 
@@ -843,17 +843,25 @@ public class Library
             db.put(keyBuf, valBuf);
             maybeGrowMap();
         }
+    }
 
-        private static class ResourceCacheNode
-                extends WeakReference<LibraryResource>
+    private static class ResourceCacheNode
+            extends WeakReference<LibraryResource>
+    {
+        private final String key;
+        private final Consumer<String> onEvict;
+
+        private ResourceCacheNode(String key, LibraryResource val, ReferenceQueue<LibraryResource> rq,
+                                  Consumer<String> onEvict)
         {
-            private final String key;
+            super(val, rq);
+            this.key = key;
+            this.onEvict = onEvict;
+        }
 
-            private ResourceCacheNode(String key, LibraryResource val, ReferenceQueue<LibraryResource> rq)
-            {
-                super(val, rq);
-                this.key = key;
-            }
+        private void evict()
+        {
+            onEvict.accept(key);
         }
     }
 
