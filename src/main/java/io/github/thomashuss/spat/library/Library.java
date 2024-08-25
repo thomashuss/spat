@@ -372,6 +372,11 @@ public class Library
         return retrieveOrCreate(trackDb, id, Track::new);
     }
 
+    public Track getTrack(String id)
+    {
+        return retrieveOrCreate(trackDb, id, null);
+    }
+
     public List<Playlist> getPlaylists()
     {
         List<Playlist> ret = playlistDb.values();
@@ -731,8 +736,12 @@ public class Library
                     final ByteBuffer keyBuf = encodeKey(key);
                     res = tryFromDB(keyBuf);
                     if (res == null) {
-                        obj = func.apply(key);
-                        if (shouldCommitOnInstantiation) put(keyBuf, obj);
+                        if (func == null) {
+                            return null;
+                        } else {
+                            obj = func.apply(key);
+                            if (shouldCommitOnInstantiation) put(keyBuf, obj);
+                        }
                     } else {
                         obj = valueClass.cast(res);
                     }
