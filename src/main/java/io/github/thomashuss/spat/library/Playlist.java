@@ -21,6 +21,7 @@ public class Playlist
     }
 
     @Override
+    @JsonIgnore
     public String getKey()
     {
         return id;

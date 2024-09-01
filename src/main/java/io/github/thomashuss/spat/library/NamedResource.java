@@ -1,5 +1,9 @@
 package io.github.thomashuss.spat.library;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import javax.annotation.Nonnull;
+
 /**
  * A resource in this library which does not correspond directly to a resource in Spotify's model and is therefore
  * identified by its name.
@@ -21,6 +25,7 @@ public abstract class NamedResource
     }
 
     @Override
+    @JsonIgnore
     public String getKey()
     {
         return name;
@@ -43,7 +48,7 @@ public abstract class NamedResource
     }
 
     @Override
-    public int compareTo(String s)
+    public int compareTo(@Nonnull String s)
     {
         return name.compareTo(s);
     }

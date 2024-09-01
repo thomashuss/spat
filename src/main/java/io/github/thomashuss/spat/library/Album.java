@@ -1,6 +1,5 @@
 package io.github.thomashuss.spat.library;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -15,8 +14,9 @@ import java.time.temporal.Temporal;
 public class Album
         extends SpotifyResource
 {
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private transient Label label;
+    @JsonProperty(value = "release_date", access = JsonProperty.Access.READ_ONLY)
     private Temporal releaseDate;
     @JsonProperty("popularity")
     private byte popularity;
@@ -26,13 +26,13 @@ public class Album
     private String ean;
     @JsonProperty("upc")
     private String upc;
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private transient Artist[] artists;
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private transient Track[] tracks;
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private transient Genre[] genres;
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private URL[] images;
 
     Album(String id)

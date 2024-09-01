@@ -1,5 +1,7 @@
 package io.github.thomashuss.spat.library;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -11,14 +13,17 @@ public interface AbstractSpotifyResource
 {
     String getId();
 
+    @JsonIgnore
     String getResourceTypeName();
 
     @Override
+    @JsonIgnore
     default String getKey()
     {
         return getId();
     }
 
+    @JsonIgnore
     default URI getOpenUri()
     {
         try {
@@ -28,6 +33,7 @@ public interface AbstractSpotifyResource
         return null;
     }
 
+    @JsonIgnore
     default URI getWebUri()
     {
         try {

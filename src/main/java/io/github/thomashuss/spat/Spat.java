@@ -2,6 +2,7 @@ package io.github.thomashuss.spat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import org.apache.fury.Fury;
 import org.apache.fury.config.Language;
 
@@ -22,4 +23,5 @@ public class Spat
     public static final ObjectMapper mapper = JsonMapper.builder()
             .findAndAddModules()
             .build();
+    public static final CsvMapper csvMapper = CsvMapper.builder().findAndAddModules().build();
 }

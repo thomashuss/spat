@@ -1,5 +1,9 @@
 package io.github.thomashuss.spat.library;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+
 import java.time.ZonedDateTime;
 import java.util.Objects;
 
@@ -10,7 +14,9 @@ public abstract sealed class SavedResource<T extends LibraryResource>
         implements LibraryResource
         permits SavedAlbum, SavedTrack
 {
+    @JsonProperty("added_at")
     private ZonedDateTime addedAt;
+    @JsonUnwrapped
     private T resource;
 
     SavedResource()
@@ -76,12 +82,14 @@ public abstract sealed class SavedResource<T extends LibraryResource>
     }
 
     @Override
+    @JsonIgnore
     public String getKey()
     {
         return resource.getKey();
     }
 
     @Override
+    @JsonIgnore
     public String getName()
     {
         return resource.getName();

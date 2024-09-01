@@ -1,6 +1,5 @@
 package io.github.thomashuss.spat.library;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -11,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public abstract class SpotifyResource
         implements AbstractSpotifyResource
 {
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private final String id;
     @JsonProperty("name")
     private String name;

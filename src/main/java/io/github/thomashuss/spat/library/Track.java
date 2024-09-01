@@ -12,9 +12,9 @@ import java.net.URL;
 public class Track
         extends SpotifyResource
 {
-    @JsonIgnore
-    private transient Album album;  // Transient to avoid a cyclic dependency.
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private transient Album album;
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private transient Artist[] artists;
     @JsonProperty("duration_ms")
     private int duration;
@@ -83,6 +83,7 @@ public class Track
         return previewUrl;
     }
 
+    @JsonIgnore
     public boolean isPlayable()
     {
         return isPlayable;

@@ -50,6 +50,7 @@ public class SavedResourceCollection<T extends AbstractSpotifyResource>
     }
 
     @Override
+    @JsonIgnore
     public String getKey()
     {
         return name;

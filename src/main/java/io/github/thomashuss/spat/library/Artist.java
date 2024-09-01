@@ -1,6 +1,5 @@
 package io.github.thomashuss.spat.library;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.net.URL;
@@ -11,13 +10,13 @@ import java.net.URL;
 public class Artist
         extends SpotifyResource
 {
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private transient Genre[] genres;
     @JsonProperty("popularity")
     private byte popularity;
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private int followers;
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private URL[] images;
 
     Artist(String id)
