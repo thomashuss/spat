@@ -1,11 +1,14 @@
 package io.github.thomashuss.spat.gui;
 
 import io.github.thomashuss.spat.library.Playlist;
+import io.github.thomashuss.spat.library.Track;
 import io.github.thomashuss.spat.tracker.AddTracks;
 import io.github.thomashuss.spat.tracker.Edit;
 import io.github.thomashuss.spat.tracker.IllegalEditException;
 import io.github.thomashuss.spat.tracker.MoveTracks;
+import io.github.thomashuss.spat.tracker.PlaylistFilter;
 import io.github.thomashuss.spat.tracker.RemoveTracks;
+import io.github.thomashuss.spat.tracker.ResourceFilter;
 
 import javax.swing.JOptionPane;
 
@@ -15,6 +18,12 @@ class PlaylistTrackTableModel
     public PlaylistTrackTableModel(MainGUI main, Playlist playlist)
     {
         super(main, playlist);
+    }
+
+    @Override
+    protected ResourceFilter<Track> getResourceFilter()
+    {
+        return new PlaylistFilter(main.library, main.editTracker, (Playlist) collection);
     }
 
     @Override

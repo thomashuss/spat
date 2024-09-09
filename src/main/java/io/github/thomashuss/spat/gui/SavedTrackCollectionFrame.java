@@ -10,6 +10,7 @@ import javax.swing.ActionMap;
 import javax.swing.DropMode;
 import javax.swing.InputMap;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -30,6 +31,7 @@ class SavedTrackCollectionFrame
 {
     private static final Object NAVIGATE_LIST = new Object();
     private static final Object DELETE_ENTRIES = new Object();
+    private static final JFileChooser CHOOSER = new JFileChooser();
     final SavedTrackTableModel model;
     private final JTable table;
     private final SavedResourceCollection<Track> collection;
@@ -84,6 +86,8 @@ class SavedTrackCollectionFrame
         final JButton openButton = new JButton("Open");
         openButton.addActionListener(actionEvent ->
                 main.desktopPane.openFrameForResource(model.get(table.getSelectedRow()).getResource(), this));
+        final JButton filterButton = new JButton("Filter");
+        filterButton.addActionListener(actionEvent -> promptFilter());
 
         table.setPreferredScrollableViewportSize(new Dimension(500, 70));
         table.setFillsViewportHeight(true);
@@ -120,6 +124,7 @@ class SavedTrackCollectionFrame
             buttonPane.add(new JLabel("Playlist"));
         buttonPane.add(updateButton);
         buttonPane.add(openButton);
+        buttonPane.add(filterButton);
 
         Container contentPane = getContentPane();
         contentPane.add(tablePane, BorderLayout.CENTER);
@@ -128,6 +133,13 @@ class SavedTrackCollectionFrame
         pack();
         setVisible(true);
         setSize(DIMENSION);
+    }
+
+    private void promptFilter()
+    {
+        if (CHOOSER.showOpenDialog(main) == JFileChooser.APPROVE_OPTION) {
+            model.filter(CHOOSER.getSelectedFile());
+        }
     }
 
     private void search(String pattern)

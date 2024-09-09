@@ -7,12 +7,10 @@ import io.github.thomashuss.spat.library.Library;
 import io.github.thomashuss.spat.library.LibraryResource;
 import io.github.thomashuss.spat.library.Playlist;
 import io.github.thomashuss.spat.library.SavedResource;
-import io.github.thomashuss.spat.library.SavedTrack;
 import io.github.thomashuss.spat.library.Track;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.stream.Stream;
@@ -30,17 +28,25 @@ public class RemoveTracks
     {
         this.playlist = playlist;
         this.indices = indices;
-        indices.sort(Comparator.reverseOrder());
+        indices.sort(null);
         sr = new ArrayList<>(indices.size());
         int prev = -1;
         boolean isSequential = true;
         for (int i : indices) {
             sr.add(playlist.getSavedResourceAt(i));
             if (prev != -1) {
-                isSequential = i == prev - 1;
+                isSequential = i == prev + 1;
             }
             prev = i;
         }
+        this.isSequential = isSequential;
+    }
+
+    RemoveTracks(Playlist playlist, List<Integer> sortedIndices, boolean isSequential)
+    {
+        this.playlist = playlist;
+        this.indices = sortedIndices;
+        sr = this.indices.stream().map(playlist::getSavedResourceAt).toList();
         this.isSequential = isSequential;
     }
 
@@ -52,7 +58,7 @@ public class RemoveTracks
     RemoveTracks(Playlist playlist, int startIndex, int numEntries)
     {
         this.playlist = playlist;
-        indices = Stream.iterate(startIndex + numEntries - 1, i -> i - 1)
+        indices = Stream.iterate(startIndex, i -> i + 1)
                 .limit(numEntries)
                 .toList();
         isSequential = true;
@@ -85,16 +91,19 @@ public class RemoveTracks
     @Override
     void commit(Library library)
     {
-        indices.forEach(playlist::removeResource);
+        ListIterator<Integer> indIt = indices.listIterator(indices.size());
+        while (indIt.hasPrevious()) {
+            playlist.removeResource(indIt.previous());
+        }
     }
 
     @Override
     void revert(Library library)
     {
-        ListIterator<Integer> indIt = indices.listIterator(indices.size());
-        ListIterator<SavedResource<Track>> srIt = sr.listIterator(sr.size());
-        while (indIt.hasPrevious()) {
-            library.saveTrackToCollection((SavedTrack) srIt.previous(), playlist, indIt.previous());
+        ListIterator<Integer> indIt = indices.listIterator();
+        ListIterator<SavedResource<Track>> srIt = sr.listIterator();
+        while (indIt.hasNext()) {
+            library.saveResourceToCollection(srIt.next(), playlist, indIt.next());
         }
     }
 

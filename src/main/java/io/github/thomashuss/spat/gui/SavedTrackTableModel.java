@@ -5,7 +5,9 @@ import io.github.thomashuss.spat.library.SavedResourceCollection;
 import io.github.thomashuss.spat.library.Track;
 import io.github.thomashuss.spat.tracker.Edit;
 import io.github.thomashuss.spat.tracker.IllegalEditException;
+import io.github.thomashuss.spat.tracker.ResourceFilter;
 import io.github.thomashuss.spat.tracker.SaveTracks;
+import io.github.thomashuss.spat.tracker.SavedTrackFilter;
 import io.github.thomashuss.spat.tracker.TrackInsertion;
 import io.github.thomashuss.spat.tracker.TrackRemoval;
 import io.github.thomashuss.spat.tracker.UnsaveTracks;
@@ -66,6 +68,12 @@ class SavedTrackTableModel
                 SavedTrackTableModel.this.onTaskSuccess();
             }
         }.execute();
+    }
+
+    @Override
+    protected ResourceFilter<Track> getResourceFilter()
+    {
+        return new SavedTrackFilter(main.library, main.editTracker, collection);
     }
 
     @Override

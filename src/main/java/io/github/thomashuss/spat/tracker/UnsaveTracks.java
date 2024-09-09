@@ -7,15 +7,12 @@ import io.github.thomashuss.spat.library.Library;
 import io.github.thomashuss.spat.library.LibraryResource;
 import io.github.thomashuss.spat.library.SavedResource;
 import io.github.thomashuss.spat.library.SavedResourceCollection;
-import io.github.thomashuss.spat.library.SavedTrack;
 import io.github.thomashuss.spat.library.Track;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 public class UnsaveTracks
@@ -31,17 +28,25 @@ public class UnsaveTracks
     {
         this.ls = ls;
         this.indices = indices;
-        indices.sort(Comparator.reverseOrder());
+        indices.sort(null);
         boolean isSequential = true;
         sr = new ArrayList<>(indices.size());
         int prev = -1;
         for (int i : indices) {
-            sr.add(ls.removeResource(i));
+            sr.add(ls.getSavedResourceAt(i));
             if (isSequential && prev != -1) {
-                isSequential = i == prev - 1;
+                isSequential = i == prev + 1;
             }
             prev = i;
         }
+        this.isSequential = isSequential;
+    }
+
+    UnsaveTracks(SavedResourceCollection<Track> ls, List<Integer> indices, boolean isSequential)
+    {
+        this.ls = ls;
+        this.indices = indices;
+        sr = indices.stream().map(ls::getSavedResourceAt).toList();
         this.isSequential = isSequential;
     }
 
@@ -52,11 +57,11 @@ public class UnsaveTracks
 
     UnsaveTracks(SavedResourceCollection<Track> ls, int startIndex, int numEntries)
     {
-        indices = Stream.iterate(startIndex + numEntries - 1, i -> i - 1)
+        indices = Stream.iterate(startIndex, i -> i + 1)
                 .limit(numEntries)
                 .toList();
         this.ls = ls;
-        sr = indices.stream().map(ls::removeResource).toList();
+        sr = indices.stream().map(ls::getSavedResourceAt).toList();
         isSequential = true;
     }
 
@@ -80,22 +85,25 @@ public class UnsaveTracks
     @Override
     public LibraryResource getTarget()
     {
-        return Objects.requireNonNullElse(ls, null);
+        return ls;
     }
 
     @Override
     void commit(Library library)
     {
-        indices.forEach(ls::removeResource);
+        ListIterator<Integer> indIt = indices.listIterator(indices.size());
+        while (indIt.hasPrevious()) {
+            ls.removeResource(indIt.previous());
+        }
     }
 
     @Override
     void revert(Library library)
     {
-        ListIterator<Integer> indIt = indices.listIterator(indices.size());
-        ListIterator<SavedResource<Track>> srIt = sr.listIterator(sr.size());
-        while (indIt.hasPrevious()) {
-            library.saveTrackToCollection((SavedTrack) srIt.previous(), ls, indIt.previous());
+        ListIterator<Integer> indIt = indices.listIterator();
+        ListIterator<SavedResource<Track>> srIt = sr.listIterator();
+        while (indIt.hasNext()) {
+            library.saveResourceToCollection(srIt.next(), ls, indIt.next());
         }
     }
 
@@ -110,6 +118,6 @@ public class UnsaveTracks
     public String toString()
     {
         final int size = indices.size();
-        return "Unsave " + (size == 1 ? sr == null ? "1 track" : sr.get(0) : size + " tracks");
+        return "Unsave " + (size == 1 ? sr.get(0) : size + " tracks");
     }
 }

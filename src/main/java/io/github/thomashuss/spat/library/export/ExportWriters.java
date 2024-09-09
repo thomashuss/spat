@@ -15,6 +15,7 @@ import io.github.thomashuss.spat.library.Track;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.List;
 
 public class ExportWriters
 {
@@ -34,24 +35,37 @@ public class ExportWriters
     public static final ObjectWriter savedAlbumCsvWriter = Spat.csvMapper.writer(
             Spat.csvMapper.schemaFor(SavedAlbum.class).withHeader());
 
+    public static <T extends SavedResource<?>> ObjectWriter getWriterFor(Class<T> cls,
+                                                                         boolean isJson)
+    {
+        if (isJson) return jsonWriter;
+        else if (cls == SavedTrack.class) return savedTrackCsvWriter;
+        else if (cls == SavedAlbum.class) return savedAlbumCsvWriter;
+        else throw new IllegalArgumentException(cls.toString());
+    }
+
     /**
-     * Convenience method for writing a saved resource collection.  Closes <code>writer</code>
+     * Convenience method for writing multiple saved resource collections.  Closes <code>writer</code>
      * when all resources have been written.
      *
-     * @param src          collection to write
-     * @param objectWriter Jackson writer to use
-     * @param writer       stream writer to use
-     * @param <T>          type of saved resource
+     * @param l      collections to write
+     * @param isJson whether to write JSON
+     * @param writer writer to write to, then close
+     * @param <T>    type of saved resource
      * @throws IOException on I/O errors
      */
-    public static <T extends AbstractSpotifyResource> void writeAll(SavedResourceCollection<T> src,
-                                                                    ObjectWriter objectWriter, Writer writer)
+    public static <T extends AbstractSpotifyResource> void writeAll(List<SavedResourceCollection<T>> l,
+                                                                    boolean isJson, Writer writer)
     throws IOException
     {
-        SequenceWriter w = objectWriter.writeValues(writer);
-        for (SavedResource<T> sr : src.getSavedResources()) {
-            w.write(sr);
+        SequenceWriter w = null;
+        for (SavedResourceCollection<T> src : l) {
+            for (SavedResource<T> sr : src.getSavedResources()) {
+                if (w == null) w = getWriterFor(sr.getClass(), isJson).writeValues(writer);
+                w.write(sr);
+            }
         }
+        if (w != null) w.close();
         writer.flush();
         writer.close();
     }
