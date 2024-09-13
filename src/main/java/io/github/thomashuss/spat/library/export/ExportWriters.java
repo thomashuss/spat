@@ -15,6 +15,7 @@ import io.github.thomashuss.spat.library.Track;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.Iterator;
 import java.util.List;
 
 public class ExportWriters
@@ -58,15 +59,32 @@ public class ExportWriters
                                                                     boolean isJson, Writer writer)
     throws IOException
     {
-        SequenceWriter seqWriter = null;
-        for (SavedResourceCollection<T> src : l) {
-            for (SavedResource<T> sr : src.getSavedResources()) {
-                if (seqWriter == null) seqWriter = getWriterFor(sr.getClass(), isJson).writeValues(writer);
-                seqWriter.write(sr);
+        SequenceWriter seqWriter;
+        Iterator<SavedResourceCollection<T>> lit = l.iterator();
+        Iterator<SavedResource<T>> srIt = firstWithNext(lit);
+        SavedResource<T> sr;
+        if (srIt != null) {
+            sr = srIt.next();
+            seqWriter = getWriterFor(sr.getClass(), isJson).writeValues(writer);
+            seqWriter.write(sr);
+            while (srIt.hasNext() || (srIt = firstWithNext(lit)) != null) {
+                seqWriter.write(srIt.next());
+            }
+            writer.flush();
+            seqWriter.close();
+        }
+        writer.close();
+    }
+
+    private static <T extends AbstractSpotifyResource> Iterator<SavedResource<T>> firstWithNext(Iterator<SavedResourceCollection<T>> it)
+    {
+        List<SavedResource<T>> ret;
+        while (it.hasNext()) {
+            ret = it.next().getSavedResources();
+            if (!ret.isEmpty()) {
+                return ret.iterator();
             }
         }
-        writer.flush();
-        if (seqWriter != null) seqWriter.close();
-        writer.close();
+        return null;
     }
 }
