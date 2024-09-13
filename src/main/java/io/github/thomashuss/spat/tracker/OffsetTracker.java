@@ -11,6 +11,7 @@ import java.util.NoSuchElementException;
 abstract class OffsetTracker
 {
     private static final int THRESHOLD = 8;
+
     abstract int get(int i);
 
     abstract void adjustOffset(int lower, int upper, int offset);
@@ -164,21 +165,19 @@ abstract class OffsetTracker
         @Override
         void adjustOffset(int lower, int upper, int offset)
         {
-            int fenceLower, fenceUpper, rangeIdx, curr, prev, j, fupAdj;
+            int fenceLower, fenceUpper, rangeIdx, curr, prev, j;
             for (int fup = 1; fup <= fences.size(); fup++) {
                 fenceLower = fences.get(fup - 1);
                 fenceUpper = fup == fences.size() ? indices.length : fences.get(fup);
                 if (indices[fenceLower] >= upper || indices[fenceUpper - 1] < lower) continue;
                 rangeIdx = findRangeInFence(fenceLower, fenceUpper, lower, upper);
 
-                fupAdj = 0;
                 for (j = rangeIdx; j < fenceUpper && indices[j] >= lower && indices[j] < upper; j++) {
                     curr = indices[j] += offset;
                     if (j - 1 >= rangeIdx) {
                         prev = indices[j - 1];
                         if ((prev < lower || prev >= upper) && curr < prev) {
-                            fupAdj++;
-                            fences.add(fup, j);
+                            fences.add(fup++, j);
                         }
                     }
                 }
@@ -186,8 +185,7 @@ abstract class OffsetTracker
                     curr = indices[j];
                     prev = indices[j - 1];
                     if ((prev < lower || prev >= upper) && prev > curr) {
-                        fupAdj++;
-                        fences.add(fup, j);
+                        fences.add(fup++, j);
                     }
                 }
                 for (j = rangeIdx - 1; j >= fenceLower && indices[j] >= lower && indices[j] < upper; j--) {
@@ -195,12 +193,10 @@ abstract class OffsetTracker
                     if (j + 1 < fenceUpper) {
                         prev = indices[j + 1];
                         if (curr > prev) {
-                            fupAdj++;
-                            fences.add(fup, j + 1);
+                            fences.add(fup++, j + 1);
                         }
                     }
                 }
-                fup += fupAdj;
             }
         }
     }
