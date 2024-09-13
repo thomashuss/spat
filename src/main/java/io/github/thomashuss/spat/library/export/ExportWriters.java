@@ -58,15 +58,15 @@ public class ExportWriters
                                                                     boolean isJson, Writer writer)
     throws IOException
     {
-        SequenceWriter w = null;
+        SequenceWriter seqWriter = null;
         for (SavedResourceCollection<T> src : l) {
             for (SavedResource<T> sr : src.getSavedResources()) {
-                if (w == null) w = getWriterFor(sr.getClass(), isJson).writeValues(writer);
-                w.write(sr);
+                if (seqWriter == null) seqWriter = getWriterFor(sr.getClass(), isJson).writeValues(writer);
+                seqWriter.write(sr);
             }
         }
-        if (w != null) w.close();
         writer.flush();
+        if (seqWriter != null) seqWriter.close();
         writer.close();
     }
 }
