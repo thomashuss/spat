@@ -159,6 +159,7 @@ public class MainGUI
     {
         statePcs.firePropertyChange(HAS_LIBRARY_KEY, this.library != null, library != null);
         client.setLibrary(this.library = library);
+        editTracker.setLibrary(library);
     }
 
     private void showLogin()
@@ -381,7 +382,7 @@ public class MainGUI
     void commitEdit(Edit e)
     {
         synchronized (client) {
-            editTracker.commit(e, library);
+            editTracker.commit(e);
             library.markModified(e.getTarget());
         }
         fireUpdate(e, true);

@@ -26,13 +26,13 @@ public class SavedTrackFilter
     @Override
     void remove(List<Change<Track>> removals, boolean isSequential)
     {
-        tracker.commit(new UnsaveTracks(src, removals.stream().map(Change::getOldIdx).toList(), isSequential), library);
+        tracker.commit(new UnsaveTracks(src, removals.stream().map(Change::getOldIdx).toList(), isSequential));
     }
 
     @Override
     void add(List<Change<Track>> additions)
     {
-        tracker.commit(new SaveTracks(src, additions.stream().map(Change::getTarget).toList()), library);
+        tracker.commit(new SaveTracks(src, additions.stream().map(Change::getTarget).toList()));
     }
 
     @Override

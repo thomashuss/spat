@@ -15,6 +15,7 @@ import java.util.function.Consumer;
 public class EditTracker
 {
     private final Map<LibraryResource, Integer> modifications;
+    private Library library;
     private Edit head;
     private Edit last;
 
@@ -23,7 +24,12 @@ public class EditTracker
         modifications = new HashMap<>();
     }
 
-    public void commit(Edit edit, Library library)
+    public void setLibrary(Library library)
+    {
+        this.library = library;
+    }
+
+    public void commit(Edit edit)
     {
         if (edit.seen) {
             throw new RuntimeException("Edit already seen");

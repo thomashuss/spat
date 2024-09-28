@@ -29,13 +29,13 @@ public class PlaylistFilter
     {
         tracker.commit(new RemoveTracks(playlist,
                 removals.stream().map(Change::getOldIdx).toList(),
-                isSequential), library);
+                isSequential));
     }
 
     private void addRange(List<Change<Track>> range)
     {
         tracker.commit(new AddTracks(playlist, range.stream().map(Change::getTarget).toList(),
-                range.get(0).newIdx), library);
+                range.get(0).newIdx));
     }
 
     @Override
@@ -57,7 +57,7 @@ public class PlaylistFilter
         int oldIdx = first.oldIdx;
         int newIdx = first.newIdx;
         if (oldIdx != newIdx) {
-            tracker.commit(new MoveTracks(playlist, newIdx, oldIdx, range.size()), library);
+            tracker.commit(new MoveTracks(playlist, newIdx, oldIdx, range.size()));
         }
     }
 
