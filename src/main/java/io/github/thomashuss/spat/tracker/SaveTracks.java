@@ -4,7 +4,6 @@ import io.github.thomashuss.spat.client.ProgressTracker;
 import io.github.thomashuss.spat.client.SpotifyClient;
 import io.github.thomashuss.spat.client.SpotifyClientException;
 import io.github.thomashuss.spat.library.Library;
-import io.github.thomashuss.spat.library.LibraryResource;
 import io.github.thomashuss.spat.library.SavedResourceCollection;
 import io.github.thomashuss.spat.library.Track;
 
@@ -13,20 +12,18 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Objects;
 
 public class SaveTracks
-        extends Edit
+        extends SrcEdit<Track>
         implements TrackInsertion
 {
     private final ZonedDateTime addedAt;
     private final List<Track> tracks;
-    private final SavedResourceCollection<Track> ls;
     private final int index;
 
     SaveTracks(SavedResourceCollection<Track> ls, List<Track> tracks)
     {
-        this.ls = ls;
+        super(ls);
         index = ls.getNumResources();
         this.tracks = new ArrayList<>(tracks.size());
         ListIterator<Track> li = tracks.listIterator(tracks.size());
@@ -58,21 +55,15 @@ public class SaveTracks
     }
 
     @Override
-    public LibraryResource getTarget()
-    {
-        return Objects.requireNonNullElse(ls, null);
-    }
-
-    @Override
     void commit(Library library)
     {
-        library.saveResourcesToCollection(tracks, addedAt, ls);
+        library.saveResourcesToCollection(tracks, addedAt, src);
     }
 
     @Override
     void revert(Library library)
     {
-        ls.removeSavedResourcesInRange(index, index + tracks.size());
+        src.removeSavedResourcesInRange(index, index + tracks.size());
     }
 
     @Override

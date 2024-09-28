@@ -8,12 +8,20 @@ import io.github.thomashuss.spat.library.Library;
 import io.github.thomashuss.spat.library.LibraryResource;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class EditTracker
 {
+    private final Map<LibraryResource, Integer> modifications;
     private Edit head;
     private Edit last;
+
+    public EditTracker()
+    {
+        modifications = new HashMap<>();
+    }
 
     public void commit(Edit edit, Library library)
     {
@@ -31,6 +39,10 @@ public class EditTracker
         }
         edit.commit(library);
         last = edit;
+
+        if (modifications.merge(edit.getTarget(), 1, Integer::sum) == 1) {
+            edit.mark(library);
+        }
     }
 
     public Edit peekUndo()
@@ -54,6 +66,11 @@ public class EditTracker
             last.revert(library);
             Edit ret = last;
             last = last.prev;
+
+            if (modifications.merge(ret.getTarget(), -1, (a, b) -> a == 1 ? null : a + b) == null) {
+                ret.unmark(library);
+            }
+
             return ret;
         }
         return null;
@@ -65,6 +82,9 @@ public class EditTracker
         if (e != null) {
             e.commit(library);
             last = e;
+            if (modifications.merge(e.getTarget(), 1, Integer::sum) == 1) {
+                e.mark(library);
+            }
         }
         return e;
     }
@@ -85,6 +105,7 @@ public class EditTracker
         }
         if (last != null && last.getTarget() == resource)
             last = null;
+        modifications.remove(resource);
     }
 
     public void forEachDescription(Consumer<String> func)
@@ -118,6 +139,7 @@ public class EditTracker
                 if (head != null) {
                     head.prev = null;
                 }
+                modifications.clear();
             }
         }
     }

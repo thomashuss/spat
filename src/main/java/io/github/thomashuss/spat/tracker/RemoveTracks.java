@@ -4,7 +4,6 @@ import io.github.thomashuss.spat.client.ProgressTracker;
 import io.github.thomashuss.spat.client.SpotifyClient;
 import io.github.thomashuss.spat.client.SpotifyClientException;
 import io.github.thomashuss.spat.library.Library;
-import io.github.thomashuss.spat.library.LibraryResource;
 import io.github.thomashuss.spat.library.Playlist;
 import io.github.thomashuss.spat.library.SavedResource;
 import io.github.thomashuss.spat.library.Track;
@@ -16,17 +15,16 @@ import java.util.ListIterator;
 import java.util.stream.Stream;
 
 public class RemoveTracks
-        extends Edit
+        extends PlaylistEdit
         implements TrackRemoval
 {
     private final boolean isSequential;
     private final List<SavedResource<Track>> sr;
-    private final Playlist playlist;
     private final List<Integer> indices;
 
     RemoveTracks(Playlist playlist, List<Integer> indices)
     {
-        this.playlist = playlist;
+        super(playlist);
         this.indices = indices;
         indices.sort(null);
         sr = new ArrayList<>(indices.size());
@@ -44,7 +42,7 @@ public class RemoveTracks
 
     RemoveTracks(Playlist playlist, List<Integer> sortedIndices, boolean isSequential)
     {
-        this.playlist = playlist;
+        super(playlist);
         this.indices = sortedIndices;
         sr = this.indices.stream().map(playlist::getSavedResourceAt).toList();
         this.isSequential = isSequential;
@@ -57,7 +55,7 @@ public class RemoveTracks
 
     RemoveTracks(Playlist playlist, int startIndex, int numEntries)
     {
-        this.playlist = playlist;
+        super(playlist);
         indices = Stream.iterate(startIndex, i -> i + 1)
                 .limit(numEntries)
                 .toList();
@@ -80,12 +78,6 @@ public class RemoveTracks
     public boolean isSequential()
     {
         return isSequential;
-    }
-
-    @Override
-    public LibraryResource getTarget()
-    {
-        return playlist;
     }
 
     @Override

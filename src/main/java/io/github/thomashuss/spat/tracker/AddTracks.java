@@ -4,7 +4,6 @@ import io.github.thomashuss.spat.client.ProgressTracker;
 import io.github.thomashuss.spat.client.SpotifyClient;
 import io.github.thomashuss.spat.client.SpotifyClientException;
 import io.github.thomashuss.spat.library.Library;
-import io.github.thomashuss.spat.library.LibraryResource;
 import io.github.thomashuss.spat.library.Playlist;
 import io.github.thomashuss.spat.library.Track;
 
@@ -13,17 +12,16 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 public class AddTracks
-        extends Edit
+        extends PlaylistEdit
         implements TrackInsertion
 {
-    private final Playlist playlist;
     private final ZonedDateTime addedAt;
     private final List<Track> tracks;
     private final int index;
 
     AddTracks(Playlist playlist, List<Track> tracks, int index)
     {
-        this.playlist = playlist;
+        super(playlist);
         this.tracks = tracks;
         this.index = index;
         this.addedAt = ZonedDateTime.now();
@@ -47,12 +45,6 @@ public class AddTracks
     public List<Track> tracks()
     {
         return tracks;
-    }
-
-    @Override
-    public LibraryResource getTarget()
-    {
-        return playlist;
     }
 
     @Override

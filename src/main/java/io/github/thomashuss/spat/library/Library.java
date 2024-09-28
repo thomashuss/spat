@@ -45,7 +45,7 @@ import java.util.function.Supplier;
  *            └----> Genre
  *            └----> Label
  */
-public class Library
+public final class Library
         implements AutoCloseable
 {
     public static final long INITIAL_MAP_SIZE = 100_485_760;
@@ -55,6 +55,7 @@ public class Library
      * Purely heuristic.
      */
     private static final int CHECK_SIZE_FREQ = 1000;
+    private static final byte NO_SAVE = 0;
     private static final byte SHOULD_SAVE = 1;
     private static final byte SHOULD_SAVE_CONTENTS = 2;
 
@@ -401,11 +402,33 @@ public class Library
         return new Cleanup();
     }
 
+    private <T extends LibraryResource> void doSave(final T resource, final Consumer<T> saveFunc, final byte action)
+    {
+        byte curr = needsSaveStatus.getOrDefault(resource, NO_SAVE);
+        if ((curr & action) == action) {
+            saveFunc.accept(resource);
+            curr &= (byte) ~action;
+            if (curr == 0) needsSaveStatus.remove(resource);
+            else needsSaveStatus.put(resource, curr);
+        }
+    }
+
+    private <T extends LibraryResource> Runnable getDoSave(final T resource, final Consumer<T> saveFunc)
+    {
+        return () -> doSave(resource, saveFunc, SHOULD_SAVE);
+    }
+
+    private <T extends LibraryResource> Runnable getDoSaveContents(final T resource, final Consumer<T> saveFunc)
+    {
+        return () -> doSave(resource, saveFunc, SHOULD_SAVE_CONTENTS);
+    }
+
     private <T extends LibraryResource> void markModified(final ResourceKV<T> db, final T t)
     {
         synchronized (env) {
-            if (needsSaveStatus.putIfAbsent(t, SHOULD_SAVE) == null)
-                needsSave.add(() -> db.save(t));
+            if (needsSaveStatus.putIfAbsent(t, SHOULD_SAVE) == null) {
+                needsSave.add(getDoSave(t, db::save));
+            }
         }
     }
 
@@ -443,9 +466,9 @@ public class Library
     public void markModified(Playlist p)
     {
         synchronized (env) {
-            Byte curr = needsSaveStatus.getOrDefault(p, (byte) 0);
+            byte curr = needsSaveStatus.getOrDefault(p, NO_SAVE);
             if ((curr & SHOULD_SAVE) == 0) {
-                needsSave.add(() -> playlistDb.save(p));
+                needsSave.add(getDoSave(p, playlistDb::save));
                 needsSaveStatus.put(p, (byte) (curr | SHOULD_SAVE));
             }
         }
@@ -454,9 +477,9 @@ public class Library
     public void markContentsModified(Playlist p)
     {
         synchronized (env) {
-            Byte curr = needsSaveStatus.getOrDefault(p, (byte) 0);
+            byte curr = needsSaveStatus.getOrDefault(p, NO_SAVE);
             if ((curr & SHOULD_SAVE_CONTENTS) == 0) {
-                needsSave.add(() -> depopulateSavedResources(p));
+                needsSave.add(getDoSaveContents(p, this::depopulateSavedResources));
                 needsSaveStatus.put(p, (byte) (curr | SHOULD_SAVE_CONTENTS));
             }
         }
@@ -465,8 +488,9 @@ public class Library
     public void markContentsModified(SavedResourceCollection<?> src)
     {
         synchronized (env) {
-            if (needsSaveStatus.putIfAbsent(src, SHOULD_SAVE_CONTENTS) == null)
-                needsSave.add(() -> depopulateSavedResources(src));
+            if (needsSaveStatus.putIfAbsent(src, SHOULD_SAVE_CONTENTS) == null) {
+                needsSave.add(getDoSaveContents(src, this::depopulateSavedResources));
+            }
         }
     }
 
@@ -479,6 +503,34 @@ public class Library
     {
         synchronized (env) {
             return !needsSave.isEmpty();
+        }
+    }
+
+    /*private static Byte getUnmodifiedMark(LibraryResource ignored, byte curr)
+    {
+        curr &= ~SHOULD_SAVE;
+        if (curr == 0) return null;
+        return curr;
+    }
+
+    public void unmarkModified(LibraryResource lr)
+    {
+        synchronized (env) {
+            needsSaveStatus.computeIfPresent(lr, Library::getUnmodifiedMark);
+        }
+    }*/
+
+    private static Byte getUnmodifiedContentsMark(LibraryResource ignored, byte curr)
+    {
+        curr &= ~SHOULD_SAVE_CONTENTS;
+        if (curr == 0) return null;
+        return curr;
+    }
+
+    public void unmarkContentsModified(SavedResourceCollection<?> lr)
+    {
+        synchronized (env) {
+            needsSaveStatus.computeIfPresent(lr, Library::getUnmodifiedContentsMark);
         }
     }
 

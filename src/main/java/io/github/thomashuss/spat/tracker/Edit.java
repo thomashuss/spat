@@ -18,6 +18,10 @@ public abstract class Edit
 
     abstract void commit(Library library);
 
+    abstract void mark(Library library);
+
+    abstract void unmark(Library library);
+
     abstract void revert(Library library);
 
     abstract void push(SpotifyClient client, ProgressTracker progressTracker)

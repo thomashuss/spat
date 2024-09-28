@@ -4,7 +4,6 @@ import io.github.thomashuss.spat.client.ProgressTracker;
 import io.github.thomashuss.spat.client.SpotifyClient;
 import io.github.thomashuss.spat.client.SpotifyClientException;
 import io.github.thomashuss.spat.library.Library;
-import io.github.thomashuss.spat.library.LibraryResource;
 import io.github.thomashuss.spat.library.SavedResource;
 import io.github.thomashuss.spat.library.SavedResourceCollection;
 import io.github.thomashuss.spat.library.Track;
@@ -16,17 +15,16 @@ import java.util.ListIterator;
 import java.util.stream.Stream;
 
 public class UnsaveTracks
-        extends Edit
+        extends SrcEdit<Track>
         implements TrackRemoval
 {
     private final List<Integer> indices;
     private final List<SavedResource<Track>> sr;
-    private final SavedResourceCollection<Track> ls;
     private final boolean isSequential;
 
     UnsaveTracks(SavedResourceCollection<Track> ls, List<Integer> indices)
     {
-        this.ls = ls;
+        super(ls);
         this.indices = indices;
         indices.sort(null);
         boolean isSequential = true;
@@ -44,7 +42,7 @@ public class UnsaveTracks
 
     UnsaveTracks(SavedResourceCollection<Track> ls, List<Integer> indices, boolean isSequential)
     {
-        this.ls = ls;
+        super(ls);
         this.indices = indices;
         sr = indices.stream().map(ls::getSavedResourceAt).toList();
         this.isSequential = isSequential;
@@ -57,10 +55,10 @@ public class UnsaveTracks
 
     UnsaveTracks(SavedResourceCollection<Track> ls, int startIndex, int numEntries)
     {
+        super(ls);
         indices = Stream.iterate(startIndex, i -> i + 1)
                 .limit(numEntries)
                 .toList();
-        this.ls = ls;
         sr = indices.stream().map(ls::getSavedResourceAt).toList();
         isSequential = true;
     }
@@ -83,17 +81,11 @@ public class UnsaveTracks
     }
 
     @Override
-    public LibraryResource getTarget()
-    {
-        return ls;
-    }
-
-    @Override
     void commit(Library library)
     {
         ListIterator<Integer> indIt = indices.listIterator(indices.size());
         while (indIt.hasPrevious()) {
-            ls.removeResource(indIt.previous());
+            src.removeResource(indIt.previous());
         }
     }
 
@@ -103,7 +95,7 @@ public class UnsaveTracks
         ListIterator<Integer> indIt = indices.listIterator();
         ListIterator<SavedResource<Track>> srIt = sr.listIterator();
         while (indIt.hasNext()) {
-            library.saveResourceToCollection(srIt.next(), ls, indIt.next());
+            library.saveResourceToCollection(srIt.next(), src, indIt.next());
         }
     }
 

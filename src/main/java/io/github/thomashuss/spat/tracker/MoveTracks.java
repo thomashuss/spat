@@ -4,23 +4,21 @@ import io.github.thomashuss.spat.client.ProgressTracker;
 import io.github.thomashuss.spat.client.SpotifyClient;
 import io.github.thomashuss.spat.client.SpotifyClientException;
 import io.github.thomashuss.spat.library.Library;
-import io.github.thomashuss.spat.library.LibraryResource;
 import io.github.thomashuss.spat.library.Playlist;
 
 import java.io.IOException;
 
 public class MoveTracks
-        extends Edit
+        extends PlaylistEdit
 {
     public final int insertBefore;
     public final int rangeStart;
     public final int rangeLength;
-    private final Playlist playlist;
 
     MoveTracks(Playlist playlist, int insertBefore,
                       int rangeStart, int rangeLength)
     {
-        this.playlist = playlist;
+        super(playlist);
         this.insertBefore = insertBefore;
         this.rangeStart = rangeStart;
         this.rangeLength = rangeLength;
@@ -30,12 +28,6 @@ public class MoveTracks
                                 int rangeStart, int rangeLength)
     {
         return new MoveTracks(playlist, insertBefore, rangeStart, rangeLength);
-    }
-
-    @Override
-    public LibraryResource getTarget()
-    {
-        return playlist;
     }
 
     @Override
