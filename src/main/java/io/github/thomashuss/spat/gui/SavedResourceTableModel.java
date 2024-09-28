@@ -123,6 +123,7 @@ abstract class SavedResourceTableModel<T extends AbstractSpotifyResource>
                 }
                 updating = false;
                 fireTableDataChanged();
+                main.updateEditControls();
             }
         }.execute();
     }
