@@ -1,24 +1,53 @@
 package io.github.thomashuss.spat.tracker;
 
+import io.github.thomashuss.spat.Spat;
+import io.github.thomashuss.spat.client.ProgressTracker;
+import io.github.thomashuss.spat.client.SpotifyClient;
+import io.github.thomashuss.spat.client.SpotifyClientException;
 import io.github.thomashuss.spat.library.AbstractSpotifyResource;
 import io.github.thomashuss.spat.library.Library;
 import io.github.thomashuss.spat.library.SavedResource;
 import io.github.thomashuss.spat.library.SavedResourceCollection;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.function.Consumer;
 
 public abstract class ResourceFilter<T extends AbstractSpotifyResource>
+        extends Edit
 {
     protected final Library library;
-    protected final EditTracker tracker;
     private ArrayList<Change<T>> changes;
+    private Edit head;
+    private Edit last;
 
-    public ResourceFilter(Library library, EditTracker tracker)
+    public ResourceFilter(Library library)
     {
         this.library = library;
-        this.tracker = tracker;
+    }
+
+    protected void enqueue(Edit edit)
+    {
+        if (edit.seen) {
+            throw new RuntimeException("Edit already seen");
+        }
+        edit.seen = true;
+
+        if (head == null || last == null) {
+            head = edit;
+        }
+        if (last != null) {
+            last.next = edit;
+            edit.prev = last;
+        }
+        last = edit;
+    }
+
+    public void forEach(Consumer<Edit> func)
+    {
+        for (Edit e = head; e != null; e = e.next) func.accept(e);
     }
 
     abstract T getByKey(String key);
@@ -31,7 +60,53 @@ public abstract class ResourceFilter<T extends AbstractSpotifyResource>
 
     abstract void move(List<Change<T>> range);
 
-    abstract SavedResourceCollection<T> getTarget();
+    @Override
+    public abstract SavedResourceCollection<T> getTarget();
+
+    @Override
+    void commit(Library library)
+    {
+        for (Edit e = head; e != null; e = e.next) {
+            e.commit(library);
+        }
+    }
+
+    @Override
+    void mark(Library library)
+    {
+        library.markContentsModified(getTarget());
+    }
+
+    @Override
+    void unmark(Library library)
+    {
+        library.unmarkContentsModified(getTarget());
+    }
+
+    @Override
+    void revert(Library library)
+    {
+        for (Edit e = last; e != null; e = e.prev) {
+            e.revert(library);
+        }
+    }
+
+    @Override
+    void push(SpotifyClient client, ProgressTracker progressTracker)
+    throws SpotifyClientException, IOException
+    {
+        final long cooldown = Spat.preferences.getLong(Spat.P_PUSH_COOLDOWN, 500);
+        try {
+            Edit e = head;
+            while (e != null) {
+                e.push(client, progressTracker);
+                e = e.next;
+                if (e != null) Thread.sleep(cooldown);
+            }
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
 
     private Change<T> addChange(T t)
     {
@@ -107,5 +182,11 @@ public abstract class ResourceFilter<T extends AbstractSpotifyResource>
             new MoveIterator<>(changes.subList(i, length), OffsetTracker.of(r, a, srLength))
                     .forEachRemaining(this::move);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Apply filter to " + getTarget();
     }
 }

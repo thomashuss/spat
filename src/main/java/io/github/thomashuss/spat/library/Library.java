@@ -487,7 +487,8 @@ public final class Library
 
     public void markContentsModified(SavedResourceCollection<?> src)
     {
-        synchronized (env) {
+        if (src instanceof Playlist p) markContentsModified(p);
+        else synchronized (env) {
             if (needsSaveStatus.putIfAbsent(src, SHOULD_SAVE_CONTENTS) == null) {
                 needsSave.add(getDoSaveContents(src, this::depopulateSavedResources));
             }
@@ -527,10 +528,10 @@ public final class Library
         return curr;
     }
 
-    public void unmarkContentsModified(SavedResourceCollection<?> lr)
+    public void unmarkContentsModified(SavedResourceCollection<?> src)
     {
         synchronized (env) {
-            needsSaveStatus.computeIfPresent(lr, Library::getUnmodifiedContentsMark);
+            needsSaveStatus.computeIfPresent(src, Library::getUnmodifiedContentsMark);
         }
     }
 

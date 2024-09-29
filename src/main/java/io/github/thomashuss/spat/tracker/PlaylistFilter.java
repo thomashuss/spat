@@ -12,9 +12,9 @@ public class PlaylistFilter
 {
     private final Playlist playlist;
 
-    public PlaylistFilter(Library library, EditTracker tracker, Playlist playlist)
+    public PlaylistFilter(Library library, Playlist playlist)
     {
-        super(library, tracker);
+        super(library);
         this.playlist = playlist;
     }
 
@@ -27,14 +27,14 @@ public class PlaylistFilter
     @Override
     void remove(List<Change<Track>> removals, boolean isSequential)
     {
-        tracker.commit(new RemoveTracks(playlist,
+        enqueue(new RemoveTracks(playlist,
                 removals.stream().map(Change::getOldIdx).toList(),
                 isSequential));
     }
 
     private void addRange(List<Change<Track>> range)
     {
-        tracker.commit(new AddTracks(playlist, range.stream().map(Change::getTarget).toList(),
+        enqueue(new AddTracks(playlist, range.stream().map(Change::getTarget).toList(),
                 range.get(0).newIdx));
     }
 
@@ -57,12 +57,12 @@ public class PlaylistFilter
         int oldIdx = first.oldIdx;
         int newIdx = first.newIdx;
         if (oldIdx != newIdx) {
-            tracker.commit(new MoveTracks(playlist, newIdx, oldIdx, range.size()));
+            enqueue(new MoveTracks(playlist, newIdx, oldIdx, range.size()));
         }
     }
 
     @Override
-    SavedResourceCollection<Track> getTarget()
+    public SavedResourceCollection<Track> getTarget()
     {
         return playlist;
     }

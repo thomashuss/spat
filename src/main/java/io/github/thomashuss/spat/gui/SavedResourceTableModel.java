@@ -107,8 +107,10 @@ abstract class SavedResourceTableModel<T extends AbstractSpotifyResource>
             throws IllegalEditException, IOException, InterruptedException
             {
                 updating = true;
+                ResourceFilter<T> filter = getResourceFilter();
                 new PipeFilterAdapter(new String[]{exe.toString()})
-                        .filter(getResourceFilter(), true);
+                        .filter(filter, true);
+                main.editTracker.commit(filter);
                 return null;
             }
 

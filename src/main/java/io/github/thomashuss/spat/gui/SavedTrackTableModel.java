@@ -73,7 +73,7 @@ class SavedTrackTableModel
     @Override
     protected ResourceFilter<Track> getResourceFilter()
     {
-        return new SavedTrackFilter(main.library, main.editTracker, collection);
+        return new SavedTrackFilter(main.library, collection);
     }
 
     @Override
@@ -130,9 +130,11 @@ class SavedTrackTableModel
         if (edit instanceof TrackInsertion e) {
             fireUpdate(e, isCommit);
             return true;
-        }
-        else if (edit instanceof TrackRemoval e) {
+        } else if (edit instanceof TrackRemoval e) {
             fireUpdate(e, isCommit);
+            return true;
+        } else if (edit instanceof ResourceFilter<?> f) {
+            f.forEach((e) -> fireUpdate(e, isCommit));
             return true;
         }
         return false;

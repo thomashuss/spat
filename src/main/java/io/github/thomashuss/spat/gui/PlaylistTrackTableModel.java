@@ -23,7 +23,7 @@ class PlaylistTrackTableModel
     @Override
     protected ResourceFilter<Track> getResourceFilter()
     {
-        return new PlaylistFilter(main.library, main.editTracker, (Playlist) collection);
+        return new PlaylistFilter(main.library, (Playlist) collection);
     }
 
     @Override
