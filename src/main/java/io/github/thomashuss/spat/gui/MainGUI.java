@@ -64,6 +64,7 @@ public class MainGUI
     public static final String HAS_LIBRARY_KEY = "hasLibrary";
     public static final String PREVIEWING_TRACK_KEY = "previewingTrack";
     private static final Dimension DESKTOP_DIMENSION = new Dimension(1000, 800);
+    static final Dimension SPACER = new Dimension(0, 5);
     final ResourceDesktopPane desktopPane;
     /**
      * Synchronize library operations on this object.

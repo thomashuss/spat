@@ -35,7 +35,8 @@ class SavedTrackCollectionFrame
     final SavedTrackTableModel model;
     private final JTable table;
     private final SavedResourceCollection<Track> collection;
-    private static final Dimension DIMENSION = new Dimension(600, 300);
+    private static final Dimension SIZE = new Dimension(600, 300);
+    private static final Dimension TABLE_DIMENSION = new Dimension(500, 70);
 
     public SavedTrackCollectionFrame(MainGUI main, SavedResourceCollection<Track> collection)
     {
@@ -89,7 +90,7 @@ class SavedTrackCollectionFrame
         final JButton filterButton = new JButton("Filter");
         filterButton.addActionListener(actionEvent -> promptFilter());
 
-        table.setPreferredScrollableViewportSize(new Dimension(500, 70));
+        table.setPreferredScrollableViewportSize(TABLE_DIMENSION);
         table.setFillsViewportHeight(true);
         table.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
         table.setShowHorizontalLines(false);
@@ -132,7 +133,7 @@ class SavedTrackCollectionFrame
 
         pack();
         setVisible(true);
-        setSize(DIMENSION);
+        setSize(SIZE);
     }
 
     private void promptFilter()

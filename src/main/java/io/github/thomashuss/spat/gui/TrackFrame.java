@@ -29,6 +29,7 @@ class TrackFrame
     private static final String PLAY = "⏵";
     private static final String STOP = "⏹";
     private static final Dimension DIMENSION = new Dimension(500, 200);
+    private static final Dimension TABLE_DIMENSION = new Dimension(500, 20);
     private final Track track;
     private final ResourceLabel albumLabel;
     private final Box artistBox;
@@ -87,7 +88,7 @@ class TrackFrame
         tableModel = new FeaturesTableModel();
         JTable table = new JTable(tableModel);
         table.setTableHeader(null);
-        table.setPreferredScrollableViewportSize(new Dimension(500, 20));
+        table.setPreferredScrollableViewportSize(TABLE_DIMENSION);
         table.setFillsViewportHeight(true);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JScrollPane scrollPane = new JScrollPane(table);

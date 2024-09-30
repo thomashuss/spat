@@ -24,7 +24,6 @@ class EditPushFrame
         extends JInternalFrame
 {
     private static final Dimension LIST_SIZE = new Dimension(250, 120);
-    private static final Dimension SPACER = new Dimension(0, 5);
     private final MainGUI main;
     private final DefaultListModel<String> listModel;
     private final JButton cancelButton;
@@ -46,7 +45,7 @@ class EditPushFrame
         final JPanel listPane = new JPanel();
         listPane.setLayout(new BoxLayout(listPane, BoxLayout.PAGE_AXIS));
         listPane.add(new JLabel("Push these changes?"));
-        listPane.add(Box.createRigidArea(SPACER));
+        listPane.add(Box.createRigidArea(MainGUI.SPACER));
         listPane.add(listScrollPane);
         listPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
