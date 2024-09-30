@@ -114,12 +114,12 @@ public class EditTracker
         modifications.remove(resource);
     }
 
-    public void forEachDescription(Consumer<String> func)
+    public void forEach(Consumer<Edit> func)
     {
         if (head != null) {
             final Edit bound = last == null ? null : last.next;
             for (Edit e = head; e != bound; e = e.next) {
-                func.accept(e.toString());
+                func.accept(e);
             }
         }
     }

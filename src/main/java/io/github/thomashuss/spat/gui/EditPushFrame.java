@@ -69,7 +69,7 @@ class EditPushFrame
 
     void prompt()
     {
-        main.editTracker.forEachDescription(listModel::addElement);
+        main.editTracker.forEach((e) -> listModel.addElement(e.toString()));
         setState(true);
         setLocation((main.desktopPane.getWidth() - getWidth()) / 2,
                 (main.desktopPane.getHeight() - getHeight()) / 2);
