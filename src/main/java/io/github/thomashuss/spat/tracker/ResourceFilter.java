@@ -45,9 +45,10 @@ public abstract class ResourceFilter<T extends AbstractSpotifyResource>
         last = edit;
     }
 
-    public void forEach(Consumer<Edit> func)
+    public void forEach(Consumer<Edit> func, boolean isCommit)
     {
-        for (Edit e = head; e != null; e = e.next) func.accept(e);
+        if (isCommit) for (Edit e = head; e != null; e = e.next) func.accept(e);
+        else for (Edit e = last; e != null; e = e.prev) func.accept(e);
     }
 
     abstract T getByKey(String key);

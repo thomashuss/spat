@@ -134,7 +134,7 @@ class SavedTrackTableModel
             fireUpdate(e, isCommit);
             return true;
         } else if (edit instanceof ResourceFilter<?> f) {
-            f.forEach((e) -> fireUpdate(e, isCommit));
+            f.forEach((e) -> fireUpdate(e, isCommit), isCommit);
             return true;
         }
         return false;
