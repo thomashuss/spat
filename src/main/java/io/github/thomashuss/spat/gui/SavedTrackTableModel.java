@@ -197,9 +197,11 @@ class SavedTrackTableModel
             } catch (UnsupportedFlavorException | IOException e) {
                 throw new RuntimeException(e);
             }
-            if (targetRow == transferable.rangeStart) return false;
-            return commitDrop(((JTable) support.getComponent()).getModel() == transferable.getModel(),
-                    targetRow, transferable);
+            if (((JTable) support.getComponent()).getModel() == transferable.getModel()) {
+                if (targetRow == transferable.rangeStart) return false;
+                return commitDrop(true, targetRow, transferable);
+            }
+            return commitDrop(false, targetRow, transferable);
         }
     }
 
