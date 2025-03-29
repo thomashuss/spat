@@ -45,7 +45,7 @@ class EditPushFrame
         final JPanel listPane = new JPanel();
         listPane.setLayout(new BoxLayout(listPane, BoxLayout.PAGE_AXIS));
         listPane.add(new JLabel("Push these changes?"));
-        listPane.add(Box.createRigidArea(MainGUI.SPACER));
+        listPane.add(Box.createRigidArea(MainGUI.H_SPACER));
         listPane.add(listScrollPane);
         listPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 

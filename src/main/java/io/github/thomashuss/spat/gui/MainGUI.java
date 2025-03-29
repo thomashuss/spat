@@ -26,6 +26,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import javax.swing.KeyStroke;
 import javax.swing.SwingWorker;
+import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.event.InternalFrameAdapter;
 import javax.swing.event.InternalFrameEvent;
@@ -64,7 +65,7 @@ public class MainGUI
     public static final String HAS_LIBRARY_KEY = "hasLibrary";
     public static final String PREVIEWING_TRACK_KEY = "previewingTrack";
     private static final Dimension DESKTOP_DIMENSION = new Dimension(1000, 800);
-    static final Dimension SPACER = new Dimension(0, 5);
+    static final Dimension H_SPACER = new Dimension(0, 5);
     final ResourceDesktopPane desktopPane;
     /**
      * Synchronize library operations on this object.
@@ -91,6 +92,7 @@ public class MainGUI
     public MainGUI()
     {
         super(Spat.PROGRAM_NAME);
+        UIManager.put("swing.boldMetal", false);
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         client = new SpotifyClient();
         editTracker = new EditTracker();

@@ -74,13 +74,13 @@ class LibraryCleanupFrame
         JPanel listPane = new JPanel();
         listPane.setLayout(new BoxLayout(listPane, BoxLayout.PAGE_AXIS));
         listPane.add(new JLabel("The following resources are no longer needed and slated for removal from the library:"));
-        listPane.add(Box.createRigidArea(MainGUI.SPACER));
+        listPane.add(Box.createRigidArea(MainGUI.H_SPACER));
         listPane.add(listScrollPane);
         listPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         listPane.add(new JLabel("The following resources are no longer needed, but will be kept:"));
-        listPane.add(Box.createRigidArea(MainGUI.SPACER));
+        listPane.add(Box.createRigidArea(MainGUI.H_SPACER));
         listPane.add(recoveredListScrollPane);
-        listPane.add(Box.createRigidArea(MainGUI.SPACER));
+        listPane.add(Box.createRigidArea(MainGUI.H_SPACER));
         listPane.add(progressBar);
         listPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -90,7 +90,7 @@ class LibraryCleanupFrame
         JPanel actionButtonPane = new JPanel();
         actionButtonPane.setLayout(new BoxLayout(actionButtonPane, BoxLayout.PAGE_AXIS));
         actionButtonPane.add(updateButton);
-        actionButtonPane.add(Box.createRigidArea(MainGUI.SPACER));
+        actionButtonPane.add(Box.createRigidArea(MainGUI.H_SPACER));
         actionButtonPane.add(closeButton);
         JPanel resourcePane = new JPanel();
         resourcePane.setLayout(new BoxLayout(resourcePane, BoxLayout.PAGE_AXIS));
