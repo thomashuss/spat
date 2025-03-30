@@ -97,7 +97,7 @@ abstract class OffsetTracker
     private static int[] getSequentialIndices(int n)
     {
         int[] a = new int[n];
-        Arrays.parallelSetAll(a, i -> i);
+        Arrays.setAll(a, i -> i);
         return a;
     }
 
