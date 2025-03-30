@@ -99,8 +99,8 @@ public final class Library
     private int srSize = 0;
     private int ops = 0;
 
-    private WeakReference<SavedResourceCollection<Album>> savedAlbums;
-    private WeakReference<SavedResourceCollection<Track>> likedSongs;
+    private WeakReference<SavedAlbumCollection> savedAlbums;
+    private WeakReference<SavedTrackCollection> likedSongs;
 
     Library(SaveDirectory state)
     {
@@ -240,22 +240,22 @@ public final class Library
         return n + 1;
     }
 
-    public SavedResourceCollection<Track> getLikedSongs()
+    public SavedTrackCollection getLikedSongs()
     {
-        SavedResourceCollection<Track> ret;
+        SavedTrackCollection ret;
         if (likedSongs == null || (ret = likedSongs.get()) == null) {
-            ret = new SavedResourceCollection<>(LIKED_SONGS_KEY);
+            ret = new SavedTrackCollection(LIKED_SONGS_KEY);
             likedSongs = new WeakReference<>(ret);
             populateSavedResources(ret);
         }
         return ret;
     }
 
-    public SavedResourceCollection<Album> getSavedAlbums()
+    public SavedAlbumCollection getSavedAlbums()
     {
-        SavedResourceCollection<Album> ret;
+        SavedAlbumCollection ret;
         if (savedAlbums == null || (ret = savedAlbums.get()) == null) {
-            ret = new SavedResourceCollection<>(SAVED_ALBUMS_KEY);
+            ret = new SavedAlbumCollection(SAVED_ALBUMS_KEY);
             savedAlbums = new WeakReference<>(ret);
             populateSavedResources(ret);
         }
@@ -947,7 +947,7 @@ public final class Library
             List<Playlist> playlists = playlistDb.values();
             handleFinalizationQueue();
 
-            SavedResourceCollection<Album> savedAlbums = getSavedAlbums();
+            SavedAlbumCollection savedAlbums = getSavedAlbums();
             for (SavedResource<Album> s : savedAlbums.getSavedResources()) {
                 keepAlbum(s.getResource());
             }
@@ -959,7 +959,7 @@ public final class Library
                 }
             }
 
-            SavedResourceCollection<Track> likedSongs = getLikedSongs();
+            SavedTrackCollection likedSongs = getLikedSongs();
             for (SavedResource<Track> s : likedSongs.getSavedResources()) {
                 keepTrack(s.getResource());
             }

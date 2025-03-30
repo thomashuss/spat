@@ -13,7 +13,8 @@ import io.github.thomashuss.spat.library.Genre;
 import io.github.thomashuss.spat.library.Label;
 import io.github.thomashuss.spat.library.Library;
 import io.github.thomashuss.spat.library.Playlist;
-import io.github.thomashuss.spat.library.SavedResourceCollection;
+import io.github.thomashuss.spat.library.SavedAlbumCollection;
+import io.github.thomashuss.spat.library.SavedTrackCollection;
 import io.github.thomashuss.spat.library.Track;
 
 import java.io.BufferedReader;
@@ -244,7 +245,7 @@ public class SpotifyClient
         int size = 0;
         float progress = 0;
         progressTracker.updateProgress(0);
-        SavedResourceCollection<Track> ls = library.getLikedSongs();
+        SavedTrackCollection ls = library.getLikedSongs();
 
         ls.clearResources();
         do {
@@ -275,7 +276,7 @@ public class SpotifyClient
         int size = 0;
         float progress = 0;
         progressTracker.updateProgress(0);
-        SavedResourceCollection<Album> sa = library.getSavedAlbums();
+        SavedAlbumCollection sa = library.getSavedAlbums();
 
         do {
             root = apiToTree(makeUri(apiUrl));
@@ -619,7 +620,7 @@ public class SpotifyClient
      * @param c     <code>SavedResourceCollection</code> to add the tracks to
      * @throws JsonProcessingException on JSON errors
      */
-    private synchronized void treeToSavedTrackCollection(JsonNode items, SavedResourceCollection<Track> c)
+    private synchronized void treeToSavedTrackCollection(JsonNode items, SavedTrackCollection c)
     throws IOException, SpotifyClientException
     {
         if (items == null) return;

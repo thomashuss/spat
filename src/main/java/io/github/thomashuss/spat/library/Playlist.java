@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * Corresponds to a playlist in Spotify's model.  Depends on <code>Track</code>.
  */
 public class Playlist
-        extends SavedResourceCollection<Track>
+        extends SavedTrackCollection
         implements AbstractSpotifyResource
 {
     @JsonIgnore

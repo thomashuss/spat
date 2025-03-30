@@ -17,7 +17,7 @@ import java.util.function.Predicate;
  * Any user-defined collection of <code>LibraryResource</code>s.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SavedResourceCollection<T extends AbstractSpotifyResource>
+public abstract class SavedResourceCollection<T extends AbstractSpotifyResource>
         implements LibraryResource
 {
     @JsonIgnore

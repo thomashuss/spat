@@ -1,7 +1,7 @@
 package io.github.thomashuss.spat.gui;
 
 import io.github.thomashuss.spat.library.Artist;
-import io.github.thomashuss.spat.library.SavedResourceCollection;
+import io.github.thomashuss.spat.library.SavedTrackCollection;
 import io.github.thomashuss.spat.library.Track;
 import io.github.thomashuss.spat.tracker.Edit;
 import io.github.thomashuss.spat.tracker.IllegalEditException;
@@ -35,7 +35,7 @@ class SavedTrackTableModel
             new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType, "Track Range");
     private static final DataFlavor[] FLAVORS = {TRACK_FLAVOR};
 
-    public SavedTrackTableModel(MainGUI main, SavedResourceCollection<Track> collection)
+    public SavedTrackTableModel(MainGUI main, SavedTrackCollection collection)
     {
         super(main, collection);
     }

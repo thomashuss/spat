@@ -6,7 +6,7 @@ import io.github.thomashuss.spat.library.Library;
 import io.github.thomashuss.spat.library.LibraryResource;
 import io.github.thomashuss.spat.library.SaveDirectory;
 import io.github.thomashuss.spat.library.SaveFileException;
-import io.github.thomashuss.spat.library.SavedResourceCollection;
+import io.github.thomashuss.spat.library.SavedTrackCollection;
 import io.github.thomashuss.spat.library.Track;
 import io.github.thomashuss.spat.tracker.Edit;
 import io.github.thomashuss.spat.tracker.EditTracker;
@@ -497,7 +497,7 @@ public class MainGUI
             @Override
             protected JInternalFrame createNewFrame()
             {
-                SavedResourceCollection<Track> ls = library.getLikedSongs();
+                SavedTrackCollection ls = library.getLikedSongs();
                 SavedTrackCollectionFrame frame = new SavedTrackCollectionFrame(MainGUI.this, ls);
                 desktopPane.putResourceComponent(ls, frame);
                 return frame;
