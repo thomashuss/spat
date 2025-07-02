@@ -1,4 +1,4 @@
-package io.github.thomashuss.spat.tracker;
+package io.github.thomashuss.spat.editor;
 
 import io.github.thomashuss.spat.client.ProgressTracker;
 import io.github.thomashuss.spat.client.SpotifyClient;

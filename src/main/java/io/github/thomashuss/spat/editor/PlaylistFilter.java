@@ -1,4 +1,4 @@
-package io.github.thomashuss.spat.tracker;
+package io.github.thomashuss.spat.editor;
 
 import io.github.thomashuss.spat.library.Library;
 import io.github.thomashuss.spat.library.Playlist;

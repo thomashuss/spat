@@ -1,8 +1,8 @@
 package io.github.thomashuss.spat.library;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.github.thomashuss.spat.tracker.PlaylistFilter;
-import io.github.thomashuss.spat.tracker.ResourceFilter;
+import io.github.thomashuss.spat.editor.PlaylistFilter;
+import io.github.thomashuss.spat.editor.ResourceFilter;
 
 /**
  * Corresponds to a playlist in Spotify's model.  Depends on <code>Track</code>.

@@ -8,8 +8,8 @@ import io.github.thomashuss.spat.library.SaveDirectory;
 import io.github.thomashuss.spat.library.SaveFileException;
 import io.github.thomashuss.spat.library.SavedTrackCollection;
 import io.github.thomashuss.spat.library.Track;
-import io.github.thomashuss.spat.tracker.Edit;
-import io.github.thomashuss.spat.tracker.EditTracker;
+import io.github.thomashuss.spat.editor.Edit;
+import io.github.thomashuss.spat.editor.EditTracker;
 import javazoom.jl.player.Player;
 
 import javax.net.ssl.HttpsURLConnection;

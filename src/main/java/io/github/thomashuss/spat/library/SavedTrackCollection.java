@@ -1,7 +1,7 @@
 package io.github.thomashuss.spat.library;
 
-import io.github.thomashuss.spat.tracker.ResourceFilter;
-import io.github.thomashuss.spat.tracker.SavedTrackFilter;
+import io.github.thomashuss.spat.editor.ResourceFilter;
+import io.github.thomashuss.spat.editor.SavedTrackFilter;
 
 public class SavedTrackCollection
     extends SavedResourceCollection<Track>

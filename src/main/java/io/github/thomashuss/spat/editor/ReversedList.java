@@ -1,4 +1,4 @@
-package io.github.thomashuss.spat.tracker;
+package io.github.thomashuss.spat.editor;
 
 import java.util.AbstractList;
 import java.util.List;
