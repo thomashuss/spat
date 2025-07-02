@@ -8,7 +8,7 @@ import io.github.thomashuss.spat.library.Track;
 import java.util.List;
 
 public class PlaylistFilter
-        extends ResourceFilter<Track>
+        extends TrackFilter
 {
     private final Playlist playlist;
 
@@ -19,22 +19,17 @@ public class PlaylistFilter
     }
 
     @Override
-    Track getByKey(String key)
-    {
-        return library.getTrack(key);
-    }
-
-    @Override
-    void remove(List<Change<Track>> removals, boolean isSequential)
+    void remove(List<Change<Track>> removals)
     {
         enqueue(new RemoveTracks(playlist,
                 removals.stream().map(Change::getOldIdx).toList(),
-                isSequential));
+                removals.stream().map(Change::getSavedResource).toList()
+        ));
     }
 
     private void addRange(List<Change<Track>> range)
     {
-        enqueue(new AddTracks(playlist, range.stream().map(Change::getTarget).toList(),
+        enqueue(new AddTracks(playlist, range.stream().map(Change::getResource).toList(),
                 range.get(0).newIdx));
     }
 
@@ -53,7 +48,7 @@ public class PlaylistFilter
     @Override
     void move(List<Change<Track>> range)
     {
-        Change<Track> first = range.get(0);
+        Change<Track> first = range.get(range.size() - 1);
         int oldIdx = first.oldIdx;
         int newIdx = first.newIdx;
         if (oldIdx != newIdx) {

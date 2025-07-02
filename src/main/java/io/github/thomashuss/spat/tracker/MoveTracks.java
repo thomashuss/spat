@@ -11,15 +11,15 @@ import java.io.IOException;
 public class MoveTracks
         extends PlaylistEdit
 {
-    public final int insertBefore;
+    public final int insertAt;
     public final int rangeStart;
     public final int rangeLength;
 
-    MoveTracks(Playlist playlist, int insertBefore,
-                      int rangeStart, int rangeLength)
+    MoveTracks(Playlist playlist, int insertAt,
+               int rangeStart, int rangeLength)
     {
         super(playlist);
-        this.insertBefore = insertBefore;
+        this.insertAt = insertAt;
         this.rangeStart = rangeStart;
         this.rangeLength = rangeLength;
     }
@@ -33,20 +33,21 @@ public class MoveTracks
     @Override
     void commit(Library library)
     {
-        playlist.move(insertBefore, rangeStart, rangeLength, true);
+        playlist.move(insertAt, rangeStart, rangeLength);
     }
 
     @Override
     void revert(Library library)
     {
-        playlist.move(insertBefore, rangeStart, rangeLength, false);
+        playlist.move(rangeStart, insertAt, rangeLength);
     }
 
     @Override
     void push(SpotifyClient client, ProgressTracker progressTracker)
     throws SpotifyClientException, IOException
     {
-        client.reorderPlaylist(playlist, insertBefore, rangeStart, rangeLength);
+        client.reorderPlaylist(playlist, insertAt <= rangeStart ? insertAt : insertAt + rangeLength,
+                rangeStart, rangeLength);
     }
 
     @Override

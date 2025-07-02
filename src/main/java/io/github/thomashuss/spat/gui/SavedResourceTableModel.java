@@ -3,15 +3,8 @@ package io.github.thomashuss.spat.gui;
 import io.github.thomashuss.spat.library.AbstractSpotifyResource;
 import io.github.thomashuss.spat.library.SavedResource;
 import io.github.thomashuss.spat.library.SavedResourceCollection;
-import io.github.thomashuss.spat.tracker.IllegalEditException;
-import io.github.thomashuss.spat.tracker.PipeFilterAdapter;
-import io.github.thomashuss.spat.tracker.ResourceFilter;
 
-import javax.swing.JOptionPane;
-import javax.swing.SwingWorker;
 import javax.swing.table.AbstractTableModel;
-import java.io.File;
-import java.io.IOException;
 import java.util.regex.Pattern;
 
 abstract class SavedResourceTableModel<T extends AbstractSpotifyResource>
@@ -94,39 +87,5 @@ abstract class SavedResourceTableModel<T extends AbstractSpotifyResource>
         synchronized (main.client) {
             fireTableDataChanged();
         }
-    }
-
-    abstract protected ResourceFilter<T> getResourceFilter();
-
-    protected void filter(File exe)
-    {
-        new SwingWorker<Void, Void>()
-        {
-            @Override
-            protected Void doInBackground()
-            throws IllegalEditException, IOException, InterruptedException
-            {
-                updating = true;
-                ResourceFilter<T> filter = getResourceFilter();
-                new PipeFilterAdapter(new String[]{exe.toString()})
-                        .filter(filter, true);
-                main.editTracker.commit(filter);
-                return null;
-            }
-
-            @Override
-            protected void done()
-            {
-                try {
-                    get();
-                } catch (Exception e) {
-                    JOptionPane.showInternalMessageDialog(main.desktopPane, e.getMessage(),
-                            "Filter error", JOptionPane.ERROR_MESSAGE);
-                }
-                updating = false;
-                fireTableDataChanged();
-                main.updateEditControls();
-            }
-        }.execute();
     }
 }

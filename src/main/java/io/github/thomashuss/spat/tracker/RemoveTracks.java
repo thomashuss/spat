@@ -18,7 +18,6 @@ public class RemoveTracks
         extends PlaylistEdit
         implements TrackRemoval
 {
-    private final boolean isSequential;
     private final List<SavedResource<Track>> sr;
     private final List<Integer> indices;
 
@@ -28,24 +27,16 @@ public class RemoveTracks
         this.indices = indices;
         indices.sort(null);
         sr = new ArrayList<>(indices.size());
-        int prev = -1;
-        boolean isSequential = true;
         for (int i : indices) {
             sr.add(playlist.getSavedResourceAt(i));
-            if (prev != -1) {
-                isSequential = i == prev + 1;
-            }
-            prev = i;
         }
-        this.isSequential = isSequential;
     }
 
-    RemoveTracks(Playlist playlist, List<Integer> sortedIndices, boolean isSequential)
+    RemoveTracks(Playlist playlist, List<Integer> sortedIndices, List<SavedResource<Track>> sr)
     {
         super(playlist);
         this.indices = sortedIndices;
-        sr = this.indices.stream().map(playlist::getSavedResourceAt).toList();
-        this.isSequential = isSequential;
+        this.sr = sr;
     }
 
     public static RemoveTracks of(Playlist playlist, List<Integer> indices)
@@ -59,7 +50,6 @@ public class RemoveTracks
         indices = Stream.iterate(startIndex, i -> i + 1)
                 .limit(numEntries)
                 .toList();
-        isSequential = true;
         sr = indices.stream().map(playlist::getSavedResourceAt).toList();
     }
 
@@ -72,12 +62,6 @@ public class RemoveTracks
     public List<Integer> indices()
     {
         return indices;
-    }
-
-    @Override
-    public boolean isSequential()
-    {
-        return isSequential;
     }
 
     @Override

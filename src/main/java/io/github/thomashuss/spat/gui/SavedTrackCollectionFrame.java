@@ -2,7 +2,7 @@ package io.github.thomashuss.spat.gui;
 
 import io.github.thomashuss.spat.library.LibraryResource;
 import io.github.thomashuss.spat.library.Playlist;
-import io.github.thomashuss.spat.library.SavedResourceCollection;
+import io.github.thomashuss.spat.library.SavedTrackCollection;
 import io.github.thomashuss.spat.library.Track;
 
 import javax.swing.AbstractAction;
@@ -10,7 +10,6 @@ import javax.swing.ActionMap;
 import javax.swing.DropMode;
 import javax.swing.InputMap;
 import javax.swing.JButton;
-import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -27,18 +26,17 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
 class SavedTrackCollectionFrame
-        extends ResourceFrame
+        extends SavedResourceCollectionFrame<Track>
 {
     private static final Object NAVIGATE_LIST = new Object();
     private static final Object DELETE_ENTRIES = new Object();
-    private static final JFileChooser CHOOSER = new JFileChooser();
     final SavedTrackTableModel model;
     private final JTable table;
-    private final SavedResourceCollection<Track> collection;
+    private final SavedTrackCollection collection;
     private static final Dimension SIZE = new Dimension(600, 300);
     private static final Dimension TABLE_DIMENSION = new Dimension(500, 70);
 
-    public SavedTrackCollectionFrame(MainGUI main, SavedResourceCollection<Track> collection)
+    public SavedTrackCollectionFrame(MainGUI main, SavedTrackCollection collection)
     {
         super(main, collection instanceof Playlist ? collection.getName() : "Saved Tracks");
         main.library.populateSavedResources(collection);
@@ -138,9 +136,7 @@ class SavedTrackCollectionFrame
 
     private void promptFilter()
     {
-        if (CHOOSER.showOpenDialog(main) == JFileChooser.APPROVE_OPTION) {
-            model.filter(CHOOSER.getSelectedFile());
-        }
+        main.desktopPane.openNewInternalFrame(new FilterFrame<>(main, collection));
     }
 
     private void search(String pattern)
@@ -162,5 +158,11 @@ class SavedTrackCollectionFrame
     public LibraryResource getResource()
     {
         return collection;
+    }
+
+    @Override
+    SavedResourceTableModel<Track> getModel()
+    {
+        return model;
     }
 }

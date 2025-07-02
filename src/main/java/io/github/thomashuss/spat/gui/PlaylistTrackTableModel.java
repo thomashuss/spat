@@ -1,14 +1,11 @@
 package io.github.thomashuss.spat.gui;
 
 import io.github.thomashuss.spat.library.Playlist;
-import io.github.thomashuss.spat.library.Track;
 import io.github.thomashuss.spat.tracker.AddTracks;
 import io.github.thomashuss.spat.tracker.Edit;
 import io.github.thomashuss.spat.tracker.IllegalEditException;
 import io.github.thomashuss.spat.tracker.MoveTracks;
-import io.github.thomashuss.spat.tracker.PlaylistFilter;
 import io.github.thomashuss.spat.tracker.RemoveTracks;
-import io.github.thomashuss.spat.tracker.ResourceFilter;
 
 import javax.swing.JOptionPane;
 
@@ -21,12 +18,6 @@ class PlaylistTrackTableModel
     }
 
     @Override
-    protected ResourceFilter<Track> getResourceFilter()
-    {
-        return new PlaylistFilter(main.library, (Playlist) collection);
-    }
-
-    @Override
     TrackTransferHandler getTransferHandler()
     {
         return new PlaylistTrackTransferHandler();
@@ -36,9 +27,9 @@ class PlaylistTrackTableModel
     {
         if (isCommit) {
             fireTableRowsDeleted(edit.rangeStart, edit.rangeStart + edit.rangeLength - 1);
-            fireTableRowsInserted(edit.insertBefore, edit.insertBefore + edit.rangeLength - 1);
+            fireTableRowsInserted(edit.insertAt, edit.insertAt + edit.rangeLength - 1);
         } else {
-            fireTableRowsDeleted(edit.insertBefore, edit.insertBefore + edit.rangeLength - 1);
+            fireTableRowsDeleted(edit.insertAt, edit.insertAt + edit.rangeLength - 1);
             fireTableRowsInserted(edit.rangeStart, edit.rangeStart + edit.rangeLength - 1);
         }
     }
@@ -83,7 +74,8 @@ class PlaylistTrackTableModel
         {
             if (isIntraModel) {
                 if (targetRow > transferable.rangeStart + transferable.rangeLength || targetRow < transferable.rangeStart) {
-                    main.commitEdit(MoveTracks.of((Playlist) collection, targetRow,
+                    main.commitEdit(MoveTracks.of((Playlist) collection, targetRow > transferable.rangeStart
+                                    ? targetRow - transferable.rangeLength : targetRow,
                             transferable.rangeStart, transferable.rangeLength));
                     return true;
                 }

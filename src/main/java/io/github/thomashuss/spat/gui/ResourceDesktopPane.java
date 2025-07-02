@@ -51,12 +51,12 @@ class ResourceDesktopPane
         if (parent instanceof SubFrame) ((SubFrame) parent).setChild(frame);
     }
 
-    public void openFrameForResource(LibraryResource resource, JInternalFrame parent)
+    public ResourceFrame openFrameForResource(LibraryResource resource, JInternalFrame parent)
     {
-        openFrameForResource(resource, parent, this::newFrameForResource);
+        return openFrameForResource(resource, parent, this::newFrameForResource);
     }
 
-    public void openFrameForResource(LibraryResource resource,
+    public ResourceFrame openFrameForResource(LibraryResource resource,
                                      JInternalFrame parent,
                                      Function<LibraryResource, ResourceFrame> frameConstructor)
     {
@@ -73,6 +73,7 @@ class ResourceDesktopPane
             showInternalFrame(frame);
             setParentAndChild(frame, parent);
         }
+        return frame;
     }
 
     private ResourceFrame newFrameForResource(LibraryResource resource)

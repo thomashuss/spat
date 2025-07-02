@@ -12,7 +12,6 @@ public abstract class Edit
 {
     Edit prev;
     Edit next;
-    boolean seen = false;
 
     public abstract LibraryResource getTarget();
 

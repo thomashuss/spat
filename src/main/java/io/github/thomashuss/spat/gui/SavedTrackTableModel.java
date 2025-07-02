@@ -7,7 +7,6 @@ import io.github.thomashuss.spat.tracker.Edit;
 import io.github.thomashuss.spat.tracker.IllegalEditException;
 import io.github.thomashuss.spat.tracker.ResourceFilter;
 import io.github.thomashuss.spat.tracker.SaveTracks;
-import io.github.thomashuss.spat.tracker.SavedTrackFilter;
 import io.github.thomashuss.spat.tracker.TrackInsertion;
 import io.github.thomashuss.spat.tracker.TrackRemoval;
 import io.github.thomashuss.spat.tracker.UnsaveTracks;
@@ -40,14 +39,10 @@ class SavedTrackTableModel
         super(main, collection);
     }
 
-    private static void fireRemoval(boolean isSequential, List<Integer> indices, BiConsumer<Integer, Integer> updater)
+    private static void fireRemoval(List<Integer> indices, BiConsumer<Integer, Integer> updater)
     {
-        if (isSequential) {
-            updater.accept(indices.get(indices.size() - 1), indices.get(0));
-        } else {
-            for (int i : indices) {
-                updater.accept(i, i);
-            }
+        for (int i : indices) {
+            updater.accept(i, i);
         }
     }
 
@@ -68,12 +63,6 @@ class SavedTrackTableModel
                 SavedTrackTableModel.this.onTaskSuccess();
             }
         }.execute();
-    }
-
-    @Override
-    protected ResourceFilter<Track> getResourceFilter()
-    {
-        return new SavedTrackFilter(main.library, collection);
     }
 
     @Override
@@ -121,8 +110,7 @@ class SavedTrackTableModel
 
     private void fireUpdate(TrackRemoval edit, boolean isCommit)
     {
-        fireRemoval(edit.isSequential(), edit.indices(),
-                isCommit ? this::fireTableRowsDeleted : this::fireTableRowsInserted);
+        fireRemoval(edit.indices(), isCommit ? this::fireTableRowsDeleted : this::fireTableRowsInserted);
     }
 
     boolean fireUpdate(Edit edit, boolean isCommit)

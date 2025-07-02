@@ -7,7 +7,7 @@ import io.github.thomashuss.spat.library.Track;
 import java.util.List;
 
 public class SavedTrackFilter
-    extends ResourceFilter<Track>
+    extends TrackFilter
 {
     private final SavedResourceCollection<Track> src;
 
@@ -18,21 +18,15 @@ public class SavedTrackFilter
     }
 
     @Override
-    Track getByKey(String key)
+    void remove(List<Change<Track>> removals)
     {
-        return library.getTrack(key);
-    }
-
-    @Override
-    void remove(List<Change<Track>> removals, boolean isSequential)
-    {
-        enqueue(new UnsaveTracks(src, removals.stream().map(Change::getOldIdx).toList(), isSequential));
+        enqueue(new UnsaveTracks(src, removals.stream().map(Change::getOldIdx).toList()));
     }
 
     @Override
     void add(List<Change<Track>> additions)
     {
-        enqueue(new SaveTracks(src, additions.stream().map(Change::getTarget).toList()));
+        enqueue(new SaveTracks(src, additions.stream().map(Change::getResource).toList()));
     }
 
     @Override

@@ -9,19 +9,17 @@ abstract class RangeIterator<T extends AbstractSpotifyResource>
         implements Iterator<List<Change<T>>>
 {
     private final List<Change<T>> list;
-    private final int size;
     private int pos = 0;
 
     RangeIterator(List<Change<T>> list)
     {
         this.list = list;
-        size = list.size();
     }
 
     @Override
     public boolean hasNext()
     {
-        return pos < size;
+        return pos < list.size();
     }
 
     abstract boolean endOfRangeCheck(Change<T> prevC, Change<T> c);
@@ -29,16 +27,20 @@ abstract class RangeIterator<T extends AbstractSpotifyResource>
     @Override
     public List<Change<T>> next()
     {
-        final int left = pos;
+        int size = list.size();
         int i = pos;
-        Change<T> c = null;
-        Change<T> prevC;
-        do {
-            if ((pos = i) < size) {
-                prevC = c;
-                c = list.get(i++);
-            } else break;
-        } while (prevC == null || !endOfRangeCheck(prevC, c));
-        return list.subList(left, pos);
+        Change<T> prevC = null;
+        Change<T> c;
+        List<Change<T>> ret;
+        for (; i < size; i++) {
+            c = list.get(i);
+            if (prevC != null && endOfRangeCheck(prevC, c)) {
+                break;
+            }
+            prevC = c;
+        }
+        ret = list.subList(pos, i);
+        pos = i;
+        return ret;
     }
 }

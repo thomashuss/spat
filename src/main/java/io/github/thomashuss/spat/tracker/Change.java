@@ -1,45 +1,33 @@
 package io.github.thomashuss.spat.tracker;
 
 import io.github.thomashuss.spat.library.AbstractSpotifyResource;
+import io.github.thomashuss.spat.library.SavedResource;
 
 import javax.annotation.Nonnull;
 
-final class Change<T extends AbstractSpotifyResource>
-    implements Comparable<Change<T>>
+abstract class Change<T extends AbstractSpotifyResource>
+        implements Comparable<Integer>
 {
-    static final int REMOVE = -1;
-    static final int ADD = 1;
-    static final int MOVE = 2;
-    final T target;
-    byte seen = 0;
-    int oldIdx;
+    int oldIdx = -1;
     int newIdx = -1;
 
-    Change(T target)
-    {
-        this.target = target;
-    }
+    abstract SavedResource<T> getSavedResource();
 
-    static <T extends AbstractSpotifyResource> int getChangeType(Change<T> a)
-    {
-        if (a.newIdx == -1) return REMOVE;
-        else if (a.oldIdx == -1) return ADD;
-        else return MOVE;
-    }
-
-    T getTarget()
-    {
-        return target;
-    }
+    abstract T getResource();
 
     int getOldIdx()
     {
         return oldIdx;
     }
 
-    @Override
-    public int compareTo(@Nonnull Change<T> r)
+    static int compareOld(Change<?> l, Change<?> r)
     {
-        return (getChangeType(this) & getChangeType(r)) < 1 ? oldIdx - r.oldIdx : newIdx - r.newIdx;
+        return l.oldIdx - r.oldIdx;
+    }
+
+    @Override
+    public int compareTo(@Nonnull Integer i)
+    {
+        return newIdx - i;
     }
 }

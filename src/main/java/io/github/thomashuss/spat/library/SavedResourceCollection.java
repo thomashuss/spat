@@ -3,6 +3,7 @@ package io.github.thomashuss.spat.library;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.thomashuss.spat.tracker.ResourceFilter;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -121,14 +122,12 @@ public abstract class SavedResourceCollection<T extends AbstractSpotifyResource>
         return resources.subList(start, end).stream().map(SavedResource::getResource).toList();
     }
 
-    public void move(int insertBefore, int rangeStart, int rangeLength, boolean moveForward)
+    public void move(int insertAt, int rangeStart, int rangeLength)
     {
-        if (insertBefore > rangeStart) {
-            Collections.rotate(resources.subList(rangeStart, insertBefore),
-                    moveForward ? -rangeLength : rangeLength);
+        if (insertAt > rangeStart) {
+            Collections.rotate(resources.subList(rangeStart, insertAt + rangeLength), -rangeLength);
         } else {
-            Collections.rotate(resources.subList(insertBefore, rangeStart + rangeLength),
-                    moveForward ? rangeLength : -rangeLength);
+            Collections.rotate(resources.subList(insertAt, rangeStart + rangeLength), rangeLength);
         }
     }
 
@@ -159,4 +158,6 @@ public abstract class SavedResourceCollection<T extends AbstractSpotifyResource>
     {
         Collections.reverse(resources);
     }
+
+    public abstract ResourceFilter<T> getResourceFilter(Library library);
 }

@@ -1,6 +1,8 @@
 package io.github.thomashuss.spat.gui;
 
 import io.github.thomashuss.spat.library.Playlist;
+import io.github.thomashuss.spat.library.SavedResourceCollection;
+import io.github.thomashuss.spat.library.Track;
 
 import javax.swing.AbstractListModel;
 import javax.swing.BoxLayout;
@@ -23,7 +25,7 @@ class PlaylistSelectionFrame
 {
     private static final Dimension DIMENSION = new Dimension(400, 200);
     private final PlaylistListListModel model;
-    private final JList<Playlist> list;
+    private final JList<SavedResourceCollection<Track>> list;
 
     public PlaylistSelectionFrame(MainGUI main)
     {
@@ -50,6 +52,8 @@ class PlaylistSelectionFrame
         list.setVisibleRowCount(-1);
         list.addMouseListener(new OpenClickAdapter(openButton));
         list.addKeyListener(new OpenKeyAdapter(openButton));
+        list.setTransferHandler(SavedResourceCollectionExportHandler.forTrackModel(model));
+        list.setDragEnabled(true);
         JScrollPane listScrollPane = new JScrollPane(list);
         listScrollPane.setAlignmentX(LEFT_ALIGNMENT);
 
@@ -84,7 +88,7 @@ class PlaylistSelectionFrame
      * are listed in the backing list of lists, but the listings of those listed lists will not be listed.
      */
     private class PlaylistListListModel
-            extends AbstractListModel<Playlist>
+            extends AbstractListModel<SavedResourceCollection<Track>>
     {
         private List<Playlist> playlists;
         private boolean updating = false;

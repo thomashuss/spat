@@ -9,7 +9,6 @@ import io.github.thomashuss.spat.library.SavedResourceCollection;
 import io.github.thomashuss.spat.library.Track;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.stream.Stream;
@@ -20,37 +19,12 @@ public class UnsaveTracks
 {
     private final List<Integer> indices;
     private final List<SavedResource<Track>> sr;
-    private final boolean isSequential;
 
     UnsaveTracks(SavedResourceCollection<Track> ls, List<Integer> indices)
     {
         super(ls);
         this.indices = indices;
-        indices.sort(null);
-        boolean isSequential = true;
-        sr = new ArrayList<>(indices.size());
-        int prev = -1;
-        for (int i : indices) {
-            sr.add(ls.getSavedResourceAt(i));
-            if (isSequential && prev != -1) {
-                isSequential = i == prev + 1;
-            }
-            prev = i;
-        }
-        this.isSequential = isSequential;
-    }
-
-    UnsaveTracks(SavedResourceCollection<Track> ls, List<Integer> indices, boolean isSequential)
-    {
-        super(ls);
-        this.indices = indices;
         sr = indices.stream().map(ls::getSavedResourceAt).toList();
-        this.isSequential = isSequential;
-    }
-
-    public static UnsaveTracks of(Library library, List<Integer> indices)
-    {
-        return new UnsaveTracks(library.getLikedSongs(), indices);
     }
 
     UnsaveTracks(SavedResourceCollection<Track> ls, int startIndex, int numEntries)
@@ -60,7 +34,6 @@ public class UnsaveTracks
                 .limit(numEntries)
                 .toList();
         sr = indices.stream().map(ls::getSavedResourceAt).toList();
-        isSequential = true;
     }
 
     public static UnsaveTracks of(Library library, int startIndex, int numEntries)
@@ -72,12 +45,6 @@ public class UnsaveTracks
     public List<Integer> indices()
     {
         return indices;
-    }
-
-    @Override
-    public boolean isSequential()
-    {
-        return isSequential;
     }
 
     @Override

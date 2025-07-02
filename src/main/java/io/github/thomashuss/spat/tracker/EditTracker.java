@@ -31,11 +31,6 @@ public class EditTracker
 
     public void commit(Edit edit)
     {
-        if (edit.seen) {
-            throw new RuntimeException("Edit already seen");
-        }
-        edit.seen = true;
-
         if (head == null || last == null) {
             head = edit;
         }

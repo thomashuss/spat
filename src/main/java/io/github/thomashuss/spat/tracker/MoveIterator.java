@@ -2,19 +2,20 @@ package io.github.thomashuss.spat.tracker;
 
 import io.github.thomashuss.spat.library.AbstractSpotifyResource;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
 final class MoveIterator<T extends AbstractSpotifyResource>
         implements Iterator<List<Change<T>>>
 {
-    private final SequentialOldNewIterator<T> changeIt;
-    private final OffsetTracker ot;
+    private final ReverseSequentialOldNewIterator<T> changeIt;
+    private final List<Change<T>> working;
 
-    MoveIterator(List<Change<T>> relocations, OffsetTracker ot)
+    MoveIterator(List<Change<T>> relocations, List<Change<T>> working)
     {
-        this.changeIt = new SequentialOldNewIterator<>(relocations);
-        this.ot = ot;
+        this.changeIt = new ReverseSequentialOldNewIterator<>(relocations);
+        this.working = working;
     }
 
     @Override
@@ -26,13 +27,27 @@ final class MoveIterator<T extends AbstractSpotifyResource>
     @Override
     public List<Change<T>> next()
     {
-        List<Change<T>> change = changeIt.next();
-        final int n = change.size();
-        for (Change<T> c : change) c.oldIdx = ot.get(c.oldIdx);
-        Change<T> first = change.get(0);
-        if (first.oldIdx != first.newIdx && changeIt.hasNext()) {
-            ot.adjustOffset(first.newIdx, first.oldIdx + n, n);
+        List<Change<T>> changeBlock = changeIt.next();
+        List<Change<T>> carousel;
+        List<Change<T>> touch;
+        Change<T> c = changeBlock.get(changeBlock.size() - 1);
+        int offset;
+
+        if (c.newIdx > c.oldIdx) {
+            offset = -changeBlock.size();
+            carousel = working.subList(c.oldIdx, c.newIdx + changeBlock.size());
+            touch = carousel.subList(changeBlock.size(), carousel.size());
+        } else if (c.newIdx < c.oldIdx) {
+            offset = changeBlock.size();
+            carousel = working.subList(c.newIdx, c.oldIdx + changeBlock.size());
+            touch = carousel.subList(0, carousel.size() - changeBlock.size());
+        } else {
+            return changeBlock;
         }
-        return change;
+        for (Change<T> c1 : touch) {
+            c1.oldIdx += offset;
+        }
+        Collections.rotate(carousel, offset);
+        return changeBlock;
     }
 }

@@ -1,6 +1,8 @@
 package io.github.thomashuss.spat.library;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.github.thomashuss.spat.tracker.PlaylistFilter;
+import io.github.thomashuss.spat.tracker.ResourceFilter;
 
 /**
  * Corresponds to a playlist in Spotify's model.  Depends on <code>Track</code>.
@@ -57,5 +59,11 @@ public class Playlist
     public boolean equals(Object other)
     {
         return other instanceof Playlist && id.equals(((Playlist) other).getId());
+    }
+
+    @Override
+    public ResourceFilter<Track> getResourceFilter(Library library)
+    {
+        return new PlaylistFilter(library, this);
     }
 }

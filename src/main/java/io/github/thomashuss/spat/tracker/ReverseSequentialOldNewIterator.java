@@ -4,10 +4,10 @@ import io.github.thomashuss.spat.library.AbstractSpotifyResource;
 
 import java.util.List;
 
-class SequentialOldNewIterator<T extends AbstractSpotifyResource>
+class ReverseSequentialOldNewIterator<T extends AbstractSpotifyResource>
         extends RangeIterator<T>
 {
-    SequentialOldNewIterator(List<Change<T>> list)
+    ReverseSequentialOldNewIterator(List<Change<T>> list)
     {
         super(list);
     }
@@ -15,6 +15,6 @@ class SequentialOldNewIterator<T extends AbstractSpotifyResource>
     @Override
     boolean endOfRangeCheck(Change<T> prevC, Change<T> c)
     {
-        return c.oldIdx != prevC.oldIdx + 1 || c.newIdx != prevC.newIdx + 1;
+        return c.oldIdx != prevC.oldIdx - 1 || c.newIdx != prevC.newIdx - 1;
     }
 }

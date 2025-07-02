@@ -11,15 +11,17 @@ import io.github.thomashuss.spat.library.SavedResourceCollection;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.function.Consumer;
 
 public abstract class ResourceFilter<T extends AbstractSpotifyResource>
         extends Edit
 {
     protected final Library library;
-    private ArrayList<Change<T>> changes;
     private Edit head;
     private Edit last;
 
@@ -28,13 +30,14 @@ public abstract class ResourceFilter<T extends AbstractSpotifyResource>
         this.library = library;
     }
 
+    private static <T extends AbstractSpotifyResource> int countLessThanEq(List<Change<T>> in, int i)
+    {
+        int k = Collections.binarySearch(in, i);
+        return k < 0 ? -k - 1 : k + 1;
+    }
+
     protected void enqueue(Edit edit)
     {
-        if (edit.seen) {
-            throw new RuntimeException("Edit already seen");
-        }
-        edit.seen = true;
-
         if (head == null || last == null) {
             head = edit;
         }
@@ -53,7 +56,7 @@ public abstract class ResourceFilter<T extends AbstractSpotifyResource>
 
     abstract T getByKey(String key);
 
-    abstract void remove(List<Change<T>> removals, boolean isSequential);
+    abstract void remove(List<Change<T>> removals);
 
     abstract void add(List<Change<T>> additions);
 
@@ -109,79 +112,65 @@ public abstract class ResourceFilter<T extends AbstractSpotifyResource>
         }
     }
 
-    private Change<T> addChange(T t)
-    {
-        Change<T> c = new Change<>(t);
-        changes.add(c);
-        return c;
-    }
-
-    public final void filter(List<T> filtered, boolean shouldFailOnDuplicates)
-    throws IllegalEditException
+    public final void filter(List<T> filtered)
     {
         SavedResourceCollection<T> target = getTarget();
-        if (target.isEmpty() || filtered.isEmpty()) return;
-        HashMap<T, Change<T>> changeForResource = new HashMap<>();
-        changes = new ArrayList<>();
-        int i;
+        HashMap<T, Queue<Change<T>>> changeForResource = new HashMap<>();
+        ArrayList<Change<T>> moves = supportsMove() ? new ArrayList<>() : null;
+        ArrayList<Change<T>> deletions = new ArrayList<>();
+        ArrayList<Change<T>> insertions = new ArrayList<>();
         Change<T> change;
+        int i;
 
-        final int srLength = target.getNumResources();
         i = 0;
         for (SavedResource<T> sr : target.getSavedResources()) {
-            change = changeForResource.computeIfAbsent(sr.getResource(), this::addChange);
-            if ((change.seen & 1) == 1) {
-                if (shouldFailOnDuplicates) {
-                    throw new IllegalEditException(target,
-                            "Element `" + change.target + "' was duplicated in the original list");
-                }
-            } else {
-                change.seen = 1;
-                change.oldIdx = i;
-            }
+            change = new SavedChange<>(sr);
+            changeForResource.computeIfAbsent(sr.getResource(), k -> new LinkedList<>()).add(change);
+            change.oldIdx = i;
             i++;
         }
 
         i = 0;
         for (T t : filtered) {
-            change = changeForResource.computeIfAbsent(t, this::addChange);
-            if ((change.seen & 2) == 2) {
-                if (shouldFailOnDuplicates) {
-                    throw new IllegalEditException(target,
-                            "Element `" + change.target + "' was duplicated in the filtered list");
-                }
+            Queue<Change<T>> q = changeForResource.get(t);
+            if (q == null) {
+                change = new UnsavedChange<>(t);
+                insertions.add(change);
             } else {
-                change.seen += 2;
-                change.newIdx = i++;
+                change = q.poll();
+                if (change == null) {
+                    change = new UnsavedChange<>(t);
+                    insertions.add(change);
+                } else if (moves != null) {
+                    moves.add(change);
+                }
             }
+            change.newIdx = i++;
         }
 
-        changes.sort(null);
-        final int length = changes.size();
-
-        i = 0;
-        final List<Change<T>> r;
-        final List<Change<T>> a;
-        if ((change = changes.get(0)).newIdx == -1) {
-            int prev = change.oldIdx;
-            boolean isSequential = true;
-            for (i = 1; i < length && (change = changes.get(i)).newIdx == -1; i++) {
-                if (isSequential && (isSequential = prev - 1 == change.oldIdx)) {
-                    prev = change.oldIdx;
-                }
+        for (Queue<Change<T>> q : changeForResource.values()) {
+            while (!q.isEmpty()) {
+                deletions.add(q.poll());
             }
-            remove(r = changes.subList(0, i), isSequential);
-        } else r = null;
+        }
+        deletions.sort(Change::compareOld);
+        if (!deletions.isEmpty()) {
+            remove(deletions);
+        }
 
-        if (i < length && changes.get(i).oldIdx == -1) {
-            int leftBound = i;
-            for (i++; i < length && changes.get(i).oldIdx == -1; i++) ;
-            add(a = changes.subList(leftBound, i));
-        } else a = null;
+        if (moves != null && !moves.isEmpty()) {
+            ArrayList<Change<T>> working = new ArrayList<>(moves);
+            working.sort(Change::compareOld);
+            i = 0;
+            for (Change<T> move : working) {
+                move.oldIdx = i++;
+                move.newIdx -= countLessThanEq(insertions, move.newIdx);  // monotone nondecreasing => still sorted
+            }
+            new MoveIterator<>(new ReversedList<>(moves), working).forEachRemaining(this::move);
+        }
 
-        if (supportsMove() && i < length) {
-            new MoveIterator<>(changes.subList(i, length), OffsetTracker.of(r, a, srLength))
-                    .forEachRemaining(this::move);
+        if (!insertions.isEmpty()) {
+            add(insertions);
         }
     }
 
