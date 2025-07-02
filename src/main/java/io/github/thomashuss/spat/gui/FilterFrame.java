@@ -2,7 +2,6 @@ package io.github.thomashuss.spat.gui;
 
 import io.github.thomashuss.spat.library.AbstractSpotifyResource;
 import io.github.thomashuss.spat.library.SavedResourceCollection;
-import io.github.thomashuss.spat.tracker.IllegalEditException;
 import io.github.thomashuss.spat.tracker.PipeFilterAdapter;
 
 import javax.swing.DefaultListModel;
@@ -92,7 +91,7 @@ class FilterFrame<T extends AbstractSpotifyResource>
             {
                 @Override
                 protected Void doInBackground()
-                throws IllegalEditException, IOException, InterruptedException
+                throws IOException, InterruptedException
                 {
                     new PipeFilterAdapter(new String[]{exe.toString()}, isJson)
                             .filter(main.library, inp, out, main.editTracker);

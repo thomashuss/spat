@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -128,19 +127,6 @@ public abstract class SavedResourceCollection<T extends AbstractSpotifyResource>
             Collections.rotate(resources.subList(rangeStart, insertAt + rangeLength), -rangeLength);
         } else {
             Collections.rotate(resources.subList(insertAt, rangeStart + rangeLength), rangeLength);
-        }
-    }
-
-    public void removeResource(T resource)
-    {
-        if (!resources.isEmpty()) {
-            Iterator<SavedResource<T>> it = resources.iterator();
-            while (it.hasNext()) {
-                if (it.next().getResource().equals(resource)) {
-                    it.remove();
-                    break;
-                }
-            }
         }
     }
 
