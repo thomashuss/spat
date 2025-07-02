@@ -68,7 +68,7 @@ class EditPushFrame
 
     void prompt()
     {
-        main.editTracker.forEach((e) -> listModel.addElement(e.toString()));
+        main.editor.forEach((e) -> listModel.addElement(e.toString()));
         setState(true);
         setLocation((main.desktopPane.getWidth() - getWidth()) / 2,
                 (main.desktopPane.getHeight() - getHeight()) / 2);
@@ -126,7 +126,7 @@ class EditPushFrame
         throws SpotifyClientException, IOException, InterruptedException
         {
             synchronized (main.client) {
-                main.editTracker.pushAll(main.client, this, this::publish);
+                main.editor.pushAll(main.client, this, this::publish);
             }
             return null;
         }

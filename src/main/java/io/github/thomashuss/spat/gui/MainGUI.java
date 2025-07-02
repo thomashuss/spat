@@ -9,7 +9,7 @@ import io.github.thomashuss.spat.library.SaveFileException;
 import io.github.thomashuss.spat.library.SavedTrackCollection;
 import io.github.thomashuss.spat.library.Track;
 import io.github.thomashuss.spat.editor.Edit;
-import io.github.thomashuss.spat.editor.EditTracker;
+import io.github.thomashuss.spat.editor.Editor;
 import javazoom.jl.player.Player;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -71,7 +71,7 @@ public class MainGUI
      * Synchronize library operations on this object.
      */
     final SpotifyClient client;
-    final EditTracker editTracker;
+    final Editor editor;
     private final Desktop desktop;
     private final JInternalFrame statusFrame;
     private final JProgressBar statusProgressBar;
@@ -95,7 +95,7 @@ public class MainGUI
         UIManager.put("swing.boldMetal", false);
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         client = new SpotifyClient();
-        editTracker = new EditTracker();
+        editor = new Editor();
         statePcs = new PropertyChangeSupport(this);
         desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
 
@@ -162,7 +162,7 @@ public class MainGUI
     {
         statePcs.firePropertyChange(HAS_LIBRARY_KEY, this.library != null, library != null);
         client.setLibrary(this.library = library);
-        editTracker.setLibrary(library);
+        editor.setLibrary(library);
     }
 
     private void showLogin()
@@ -298,9 +298,9 @@ public class MainGUI
 
     void updateEditControls()
     {
-        updateEditControl(editTracker.peekUndo(), undoItem, "Undo");
-        updateEditControl(editTracker.peekRedo(), redoItem, "Redo");
-        syncItem.setEnabled(hasAuth() && editTracker.hasChanges());
+        updateEditControl(editor.peekUndo(), undoItem, "Undo");
+        updateEditControl(editor.peekRedo(), redoItem, "Redo");
+        syncItem.setEnabled(hasAuth() && editor.hasChanges());
     }
 
     void enableEverything()
@@ -369,7 +369,7 @@ public class MainGUI
     private void undo()
     {
         synchronized (client) {
-            fireUpdate(editTracker.undo(library), false);
+            fireUpdate(editor.undo(library), false);
         }
         updateEditControls();
     }
@@ -377,7 +377,7 @@ public class MainGUI
     private void redo()
     {
         synchronized (client) {
-            fireUpdate(editTracker.redo(library), true);
+            fireUpdate(editor.redo(library), true);
         }
         updateEditControls();
     }
@@ -385,7 +385,7 @@ public class MainGUI
     void commitEdit(Edit e)
     {
         synchronized (client) {
-            editTracker.commit(e);
+            editor.commit(e);
             library.markModified(e.getTarget());
         }
         fireUpdate(e, true);
@@ -394,7 +394,7 @@ public class MainGUI
 
     void abandonEditsFor(LibraryResource resource)
     {
-        editTracker.abandonEditsFor(resource);
+        editor.abandonEditsFor(resource);
         updateEditControls();
     }
 
@@ -522,7 +522,7 @@ public class MainGUI
             if (HAS_LIBRARY_KEY.equals(prop)) {
                 boolean state = (Boolean) event.getNewValue();
                 cleanItem.setEnabled(state);
-                syncItem.setEnabled(state && editTracker.hasChanges());
+                syncItem.setEnabled(state && editor.hasChanges());
                 playlistsCheckbox.setEnabled(state);
                 savedTracksCheckbox.setEnabled(state);
             } else if (HAS_AUTH_KEY.equals(prop)) {
@@ -679,7 +679,7 @@ public class MainGUI
         {
             synchronized (client) {
                 disableEverything();
-                if (editTracker.hasChanges()) {
+                if (editor.hasChanges()) {
                     if (pushDoneListener != null) pushFrame.removeInternalFrameListener(pushDoneListener);
                     sync(false);
                     pushFrame.addInternalFrameListener(new InternalFrameAdapter()

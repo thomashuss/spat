@@ -12,14 +12,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class EditTracker
+public class Editor
 {
     private final Map<LibraryResource, Integer> modifications;
     private Library library;
     private Edit head;
     private Edit last;
 
-    public EditTracker()
+    public Editor()
     {
         modifications = new HashMap<>();
     }

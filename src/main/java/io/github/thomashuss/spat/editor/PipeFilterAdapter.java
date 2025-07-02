@@ -26,7 +26,7 @@ public class PipeFilterAdapter
     }
 
     public <T extends AbstractSpotifyResource> void filter(Library library, List<SavedResourceCollection<T>> sources,
-                                                           List<SavedResourceCollection<T>> targets, EditTracker et)
+                                                           List<SavedResourceCollection<T>> targets, Editor ed)
     throws IOException, InterruptedException
     {
         if (sources.isEmpty() || targets.isEmpty()) return;
@@ -44,7 +44,7 @@ public class PipeFilterAdapter
         reader.close();
         while (true) {
             resourceFilter.filter(filtered);
-            et.commit(resourceFilter);
+            ed.commit(resourceFilter);
             if (!it.hasNext()) break;
             resourceFilter = it.next().getResourceFilter(library);
         }

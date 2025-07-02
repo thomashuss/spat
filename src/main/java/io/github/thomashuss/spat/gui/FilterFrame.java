@@ -94,7 +94,7 @@ class FilterFrame<T extends AbstractSpotifyResource>
                 throws IOException, InterruptedException
                 {
                     new PipeFilterAdapter(new String[]{exe.toString()}, isJson)
-                            .filter(main.library, inp, out, main.editTracker);
+                            .filter(main.library, inp, out, main.editor);
                     return null;
                 }
 
