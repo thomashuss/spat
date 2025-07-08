@@ -37,6 +37,7 @@ abstract class SpotifyHttpClient
     private static final Set<String> SCOPE_SET = new HashSet<>(Arrays.asList(API_SCOPE.split(" ")));
     private static final String PKCE_POSSIBLE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final URL SPOTIFY_TOKEN_URL;
+    private static final int PKCE_CODE_LENGTH = 64;
 
     static {
         try {
@@ -46,7 +47,6 @@ abstract class SpotifyHttpClient
         }
     }
 
-    private static final int PKCE_CODE_LENGTH = 64;
     private final Base64.Encoder b64Encoder;
     private final MessageDigest digest;
     private final Token token;

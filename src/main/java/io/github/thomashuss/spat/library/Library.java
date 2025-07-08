@@ -135,43 +135,6 @@ public final class Library
         savedResourceListDb = env.openDbi("savedResourceList", DbiFlags.MDB_CREATE);
     }
 
-    /**
-     * Determines if the LMDB map size "should" be increased, and if so, increases it.  The map size should be
-     * substantially overestimated, as the default one is, so an invocation of this method will increase it by
-     * quite a bit.  A new size is computed by multiplying the number of pages in all DBs by page size and by 4.
-     * If this new size is greater than the current size, we apply the new size.
-     */
-    private void growMap()
-    {
-        final long compareSize;
-        try (Txn<ByteBuffer> txn = env.txnRead()) {
-            final Stat s1 = albumDb.db.stat(txn), s2 = artistDb.db.stat(txn), s3 = genreDb.db.stat(txn),
-                    s4 = labelDb.db.stat(txn), s5 = playlistDb.db.stat(txn), s6 = trackDb.db.stat(txn),
-                    s7 = savedResourceListDb.stat(txn);
-            compareSize = (s1.branchPages + s1.leafPages + s1.overflowPages
-                    + s2.branchPages + s2.leafPages + s2.overflowPages
-                    + s3.branchPages + s3.leafPages + s3.overflowPages
-                    + s4.branchPages + s4.leafPages + s4.overflowPages
-                    + s5.branchPages + s5.leafPages + s5.overflowPages
-                    + s6.branchPages + s6.leafPages + s6.overflowPages
-                    + s7.branchPages + s7.leafPages + s7.overflowPages) * pageSize * 4;
-        }
-        if (compareSize > state.mapSize) {
-            env.setMapSize(state.mapSize = compareSize);
-        }
-    }
-
-    /**
-     * Invokes <code>growMap()</code> if enough operations have been performed.
-     */
-    private void maybeGrowMap()
-    {
-        if (++ops == CHECK_SIZE_FREQ) {
-            growMap();
-            ops = 0;
-        }
-    }
-
     private static <T extends LibraryResource, R extends SavedResource<T>> BiFunction<R, MemoryBuffer, Runnable> savedResourceFinalizer(
             final ResourceKV<T> db)
     {
@@ -240,6 +203,63 @@ public final class Library
         return n + 1;
     }
 
+    private static <T extends AbstractSpotifyResource> List<SavedResource<T>> makeSrList(List<T> resources,
+                                                                                         ZonedDateTime addedAt)
+    {
+        return resources.stream()
+                .map((Function<T, SavedResource<T>>) (t) -> SavedResource.of(addedAt, t))
+                .toList();
+    }
+
+    private static Byte getUnmodifiedContentsMark(LibraryResource ignored, byte curr)
+    {
+        curr &= ~SHOULD_SAVE_CONTENTS;
+        if (curr == 0) return null;
+        return curr;
+    }
+
+    private static <T> Function<MemoryBuffer, T> readerFor(Class<T> valueClass)
+    {
+        return buffer -> valueClass.cast(fury.deserialize(buffer));
+    }
+
+    /**
+     * Determines if the LMDB map size "should" be increased, and if so, increases it.  The map size should be
+     * substantially overestimated, as the default one is, so an invocation of this method will increase it by
+     * quite a bit.  A new size is computed by multiplying the number of pages in all DBs by page size and by 4.
+     * If this new size is greater than the current size, we apply the new size.
+     */
+    private void growMap()
+    {
+        final long compareSize;
+        try (Txn<ByteBuffer> txn = env.txnRead()) {
+            final Stat s1 = albumDb.db.stat(txn), s2 = artistDb.db.stat(txn), s3 = genreDb.db.stat(txn),
+                    s4 = labelDb.db.stat(txn), s5 = playlistDb.db.stat(txn), s6 = trackDb.db.stat(txn),
+                    s7 = savedResourceListDb.stat(txn);
+            compareSize = (s1.branchPages + s1.leafPages + s1.overflowPages
+                    + s2.branchPages + s2.leafPages + s2.overflowPages
+                    + s3.branchPages + s3.leafPages + s3.overflowPages
+                    + s4.branchPages + s4.leafPages + s4.overflowPages
+                    + s5.branchPages + s5.leafPages + s5.overflowPages
+                    + s6.branchPages + s6.leafPages + s6.overflowPages
+                    + s7.branchPages + s7.leafPages + s7.overflowPages) * pageSize * 4;
+        }
+        if (compareSize > state.mapSize) {
+            env.setMapSize(state.mapSize = compareSize);
+        }
+    }
+
+    /**
+     * Invokes <code>growMap()</code> if enough operations have been performed.
+     */
+    private void maybeGrowMap()
+    {
+        if (++ops == CHECK_SIZE_FREQ) {
+            growMap();
+            ops = 0;
+        }
+    }
+
     public SavedTrackCollection getLikedSongs()
     {
         SavedTrackCollection ret;
@@ -260,14 +280,6 @@ public final class Library
             populateSavedResources(ret);
         }
         return ret;
-    }
-
-    private static <T extends AbstractSpotifyResource> List<SavedResource<T>> makeSrList(List<T> resources,
-                                                                                         ZonedDateTime addedAt)
-    {
-        return resources.stream()
-                .map((Function<T, SavedResource<T>>) (t) -> SavedResource.of(addedAt, t))
-                .toList();
     }
 
     public <T extends AbstractSpotifyResource> void saveResourcesToCollection(List<T> resources, ZonedDateTime addedAt,
@@ -495,18 +507,6 @@ public final class Library
         }
     }
 
-    public void markModified(Track t)
-    {
-        markModified(trackDb, t);
-    }
-
-    public boolean hasModified()
-    {
-        synchronized (env) {
-            return !needsSave.isEmpty();
-        }
-    }
-
     /*private static Byte getUnmodifiedMark(LibraryResource ignored, byte curr)
     {
         curr &= ~SHOULD_SAVE;
@@ -521,11 +521,16 @@ public final class Library
         }
     }*/
 
-    private static Byte getUnmodifiedContentsMark(LibraryResource ignored, byte curr)
+    public void markModified(Track t)
     {
-        curr &= ~SHOULD_SAVE_CONTENTS;
-        if (curr == 0) return null;
-        return curr;
+        markModified(trackDb, t);
+    }
+
+    public boolean hasModified()
+    {
+        synchronized (env) {
+            return !needsSave.isEmpty();
+        }
     }
 
     public void unmarkContentsModified(SavedResourceCollection<?> src)
@@ -595,11 +600,6 @@ public final class Library
         writeResourceArray(buffer, album.getArtists());
         writeResourceArray(buffer, album.getTracks());
         writeResourceArray(buffer, album.getGenres());
-    }
-
-    private static <T> Function<MemoryBuffer, T> readerFor(Class<T> valueClass)
-    {
-        return buffer -> valueClass.cast(fury.deserialize(buffer));
     }
 
     private Runnable albumFinalizer(final Album album, MemoryBuffer buffer)
@@ -693,6 +693,26 @@ public final class Library
             while ((r = rq.poll()) != null) {
                 ((ResourceCacheNode) r).evict();
             }
+        }
+    }
+
+    private static class ResourceCacheNode
+            extends WeakReference<LibraryResource>
+    {
+        private final String key;
+        private final Consumer<String> onEvict;
+
+        private ResourceCacheNode(String key, LibraryResource val, ReferenceQueue<LibraryResource> rq,
+                                  Consumer<String> onEvict)
+        {
+            super(val, rq);
+            this.key = key;
+            this.onEvict = onEvict;
+        }
+
+        private void evict()
+        {
+            onEvict.accept(key);
         }
     }
 
@@ -904,26 +924,6 @@ public final class Library
             ensureValOffHeap();
             db.put(keyBuf, valBuf);
             maybeGrowMap();
-        }
-    }
-
-    private static class ResourceCacheNode
-            extends WeakReference<LibraryResource>
-    {
-        private final String key;
-        private final Consumer<String> onEvict;
-
-        private ResourceCacheNode(String key, LibraryResource val, ReferenceQueue<LibraryResource> rq,
-                                  Consumer<String> onEvict)
-        {
-            super(val, rq);
-            this.key = key;
-            this.onEvict = onEvict;
-        }
-
-        private void evict()
-        {
-            onEvict.accept(key);
         }
     }
 

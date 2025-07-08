@@ -30,11 +30,11 @@ class SavedTrackCollectionFrame
 {
     private static final Object NAVIGATE_LIST = new Object();
     private static final Object DELETE_ENTRIES = new Object();
+    private static final Dimension SIZE = new Dimension(600, 300);
+    private static final Dimension TABLE_DIMENSION = new Dimension(500, 70);
     final SavedTrackTableModel model;
     private final JTable table;
     private final SavedTrackCollection collection;
-    private static final Dimension SIZE = new Dimension(600, 300);
-    private static final Dimension TABLE_DIMENSION = new Dimension(500, 70);
 
     public SavedTrackCollectionFrame(MainGUI main, SavedTrackCollection collection)
     {

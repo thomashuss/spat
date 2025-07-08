@@ -16,12 +16,12 @@ public class SaveDirectory
     private static final String STATE_NAME = "state.json";
     @JsonIgnore
     File dbDir;
+    @JsonProperty("mapSize")
+    long mapSize = Library.INITIAL_MAP_SIZE;
     @JsonIgnore
     private File stateFile;
     @JsonProperty("token")
     private Token token;
-    @JsonProperty("mapSize")
-    long mapSize = Library.INITIAL_MAP_SIZE;
 
     public static Library createNewLibrary(File directory, SpotifyClient client)
     {

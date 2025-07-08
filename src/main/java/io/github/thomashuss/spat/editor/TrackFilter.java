@@ -4,7 +4,7 @@ import io.github.thomashuss.spat.library.Library;
 import io.github.thomashuss.spat.library.Track;
 
 public abstract class TrackFilter
-    extends ResourceFilter<Track>
+        extends ResourceFilter<Track>
 {
     public TrackFilter(Library library)
     {

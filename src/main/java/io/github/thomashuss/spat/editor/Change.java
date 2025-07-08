@@ -11,6 +11,11 @@ abstract class Change<T extends AbstractSpotifyResource>
     int oldIdx = -1;
     int newIdx = -1;
 
+    static int compareOld(Change<?> l, Change<?> r)
+    {
+        return l.oldIdx - r.oldIdx;
+    }
+
     abstract SavedResource<T> getSavedResource();
 
     abstract T getResource();
@@ -18,11 +23,6 @@ abstract class Change<T extends AbstractSpotifyResource>
     int getOldIdx()
     {
         return oldIdx;
-    }
-
-    static int compareOld(Change<?> l, Change<?> r)
-    {
-        return l.oldIdx - r.oldIdx;
     }
 
     @Override

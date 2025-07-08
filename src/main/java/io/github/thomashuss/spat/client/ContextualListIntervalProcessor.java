@@ -6,5 +6,6 @@ import java.util.List;
 @FunctionalInterface
 interface ContextualListIntervalProcessor<T>
 {
-    void process(List<T> list, int i) throws IOException, SpotifyClientException;
+    void process(List<T> list, int i)
+    throws IOException, SpotifyClientException;
 }

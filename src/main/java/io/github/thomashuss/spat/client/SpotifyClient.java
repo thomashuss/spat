@@ -45,6 +45,7 @@ public class SpotifyClient
     private static final int MAXIMUM_TRACK_IDS_REQUEST = 100;
     private static final int MAXIMUM_ALBUM_IDS_REQUEST = 20;
     private static final URL SAVED_TRACKS_URL;
+    private static final ObjectMapper mapper = Spat.mapper;
 
     static {
         try {
@@ -54,8 +55,56 @@ public class SpotifyClient
         }
     }
 
-    private static final ObjectMapper mapper = Spat.mapper;
     private Library library;
+
+    private static <T> void doIntervals(final int intervalSize, List<T> list, ListIntervalProcessor<T> task,
+                                        ProgressTracker progressTracker)
+    throws IOException, SpotifyClientException
+    {
+        final int length = list.size();
+        int actualEnd;
+        progressTracker.updateProgress(0);
+        for (int start = 0, end = intervalSize;
+             start < length; start = end, end += intervalSize) {
+            if (start == end) break;
+            actualEnd = Math.min(end, length);
+            task.process(list.subList(start, actualEnd));
+            progressTracker.updateProgress((int) ((float) actualEnd / length * 100));
+        }
+        progressTracker.updateProgress(100);
+    }
+
+    private static <T> void doIntervals(final int intervalSize, List<T> list, ContextualListIntervalProcessor<T> task,
+                                        ProgressTracker progressTracker)
+    throws IOException, SpotifyClientException
+    {
+        final int length = list.size();
+        int actualEnd;
+        progressTracker.updateProgress(0);
+        for (int start = 0, end = intervalSize;
+             start < length; start = end, end += intervalSize) {
+            if (start == end) break;
+            actualEnd = Math.min(end, length);
+            task.process(list.subList(start, actualEnd), start);
+            progressTracker.updateProgress((int) ((float) actualEnd / length * 100));
+        }
+        progressTracker.updateProgress(100);
+    }
+
+    private static URI makeUri(String path)
+    throws SpotifyAPIResponseException
+    {
+        try {
+            return new URI(path);
+        } catch (URISyntaxException e) {
+            throw new SpotifyAPIResponseException(e);
+        }
+    }
+
+    private static <T extends AbstractSpotifyResource> String joinIds(List<T> list)
+    {
+        return list.stream().map(AbstractSpotifyResource::getId).collect(Collectors.joining(","));
+    }
 
     @Override
     SpotifyToken parseToken(BufferedReader reader)
@@ -662,54 +711,5 @@ public class SpotifyClient
         try (BufferedReader reader = getAPIReader(apiUrl)) {
             return mapper.readTree(reader);
         }
-    }
-
-    private static <T> void doIntervals(final int intervalSize, List<T> list, ListIntervalProcessor<T> task,
-                                        ProgressTracker progressTracker)
-    throws IOException, SpotifyClientException
-    {
-        final int length = list.size();
-        int actualEnd;
-        progressTracker.updateProgress(0);
-        for (int start = 0, end = intervalSize;
-             start < length; start = end, end += intervalSize) {
-            if (start == end) break;
-            actualEnd = Math.min(end, length);
-            task.process(list.subList(start, actualEnd));
-            progressTracker.updateProgress((int) ((float) actualEnd / length * 100));
-        }
-        progressTracker.updateProgress(100);
-    }
-
-    private static <T> void doIntervals(final int intervalSize, List<T> list, ContextualListIntervalProcessor<T> task,
-                                        ProgressTracker progressTracker)
-    throws IOException, SpotifyClientException
-    {
-        final int length = list.size();
-        int actualEnd;
-        progressTracker.updateProgress(0);
-        for (int start = 0, end = intervalSize;
-             start < length; start = end, end += intervalSize) {
-            if (start == end) break;
-            actualEnd = Math.min(end, length);
-            task.process(list.subList(start, actualEnd), start);
-            progressTracker.updateProgress((int) ((float) actualEnd / length * 100));
-        }
-        progressTracker.updateProgress(100);
-    }
-
-    private static URI makeUri(String path)
-    throws SpotifyAPIResponseException
-    {
-        try {
-            return new URI(path);
-        } catch (URISyntaxException e) {
-            throw new SpotifyAPIResponseException(e);
-        }
-    }
-
-    private static <T extends AbstractSpotifyResource> String joinIds(List<T> list)
-    {
-        return list.stream().map(AbstractSpotifyResource::getId).collect(Collectors.joining(","));
     }
 }

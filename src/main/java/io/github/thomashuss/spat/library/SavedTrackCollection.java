@@ -4,7 +4,7 @@ import io.github.thomashuss.spat.editor.ResourceFilter;
 import io.github.thomashuss.spat.editor.SavedTrackFilter;
 
 public class SavedTrackCollection
-    extends SavedResourceCollection<Track>
+        extends SavedResourceCollection<Track>
 {
     SavedTrackCollection()
     {

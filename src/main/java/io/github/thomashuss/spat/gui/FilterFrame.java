@@ -1,8 +1,8 @@
 package io.github.thomashuss.spat.gui;
 
+import io.github.thomashuss.spat.editor.PipeFilterAdapter;
 import io.github.thomashuss.spat.library.AbstractSpotifyResource;
 import io.github.thomashuss.spat.library.SavedResourceCollection;
-import io.github.thomashuss.spat.editor.PipeFilterAdapter;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;

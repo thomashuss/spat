@@ -57,8 +57,8 @@ class ResourceDesktopPane
     }
 
     public ResourceFrame openFrameForResource(LibraryResource resource,
-                                     JInternalFrame parent,
-                                     Function<LibraryResource, ResourceFrame> frameConstructor)
+                                              JInternalFrame parent,
+                                              Function<LibraryResource, ResourceFrame> frameConstructor)
     {
         ResourceFrame frame = getFrameForResource(resource);
         if (frame == null) {

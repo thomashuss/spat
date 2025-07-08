@@ -16,7 +16,7 @@ class SavedResourceCollectionTransferHandler<T extends AbstractSpotifyResource>
         extends SavedResourceCollectionExportHandler<T>
 {
     private SavedResourceCollectionTransferHandler(DefaultListModel<SavedResourceCollection<T>> model,
-                                                 DataFlavor[] flavors)
+                                                   DataFlavor[] flavors)
     {
         super(model, flavors);
     }

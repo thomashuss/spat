@@ -2,14 +2,14 @@ package io.github.thomashuss.spat.gui;
 
 import io.github.thomashuss.spat.Spat;
 import io.github.thomashuss.spat.client.SpotifyClient;
+import io.github.thomashuss.spat.editor.Edit;
+import io.github.thomashuss.spat.editor.Editor;
 import io.github.thomashuss.spat.library.Library;
 import io.github.thomashuss.spat.library.LibraryResource;
 import io.github.thomashuss.spat.library.SaveDirectory;
 import io.github.thomashuss.spat.library.SaveFileException;
 import io.github.thomashuss.spat.library.SavedTrackCollection;
 import io.github.thomashuss.spat.library.Track;
-import io.github.thomashuss.spat.editor.Edit;
-import io.github.thomashuss.spat.editor.Editor;
 import javazoom.jl.player.Player;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -64,8 +64,8 @@ public class MainGUI
     public static final String HAS_AUTH_KEY = "hasAuth";
     public static final String HAS_LIBRARY_KEY = "hasLibrary";
     public static final String PREVIEWING_TRACK_KEY = "previewingTrack";
-    private static final Dimension DESKTOP_DIMENSION = new Dimension(1000, 800);
     static final Dimension H_SPACER = new Dimension(0, 5);
+    private static final Dimension DESKTOP_DIMENSION = new Dimension(1000, 800);
     final ResourceDesktopPane desktopPane;
     /**
      * Synchronize library operations on this object.

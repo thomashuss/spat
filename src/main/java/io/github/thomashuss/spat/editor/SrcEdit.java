@@ -6,7 +6,7 @@ import io.github.thomashuss.spat.library.LibraryResource;
 import io.github.thomashuss.spat.library.SavedResourceCollection;
 
 public abstract class SrcEdit<T extends AbstractSpotifyResource>
-    extends Edit
+        extends Edit
 {
     protected final SavedResourceCollection<T> src;
 

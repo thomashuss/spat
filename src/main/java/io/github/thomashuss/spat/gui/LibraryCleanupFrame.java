@@ -33,8 +33,8 @@ class LibraryCleanupFrame
     private final JButton updateButton;
     private final JButton closeButton;
     private final JButton keepButton;
-    private Library.Cleanup cleanup;
     private final MainGUI main;
+    private Library.Cleanup cleanup;
 
     public LibraryCleanupFrame(MainGUI main)
     {

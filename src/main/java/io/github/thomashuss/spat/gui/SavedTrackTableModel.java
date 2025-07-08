@@ -1,8 +1,5 @@
 package io.github.thomashuss.spat.gui;
 
-import io.github.thomashuss.spat.library.Artist;
-import io.github.thomashuss.spat.library.SavedTrackCollection;
-import io.github.thomashuss.spat.library.Track;
 import io.github.thomashuss.spat.editor.Edit;
 import io.github.thomashuss.spat.editor.IllegalEditException;
 import io.github.thomashuss.spat.editor.ResourceFilter;
@@ -10,6 +7,9 @@ import io.github.thomashuss.spat.editor.SaveTracks;
 import io.github.thomashuss.spat.editor.TrackInsertion;
 import io.github.thomashuss.spat.editor.TrackRemoval;
 import io.github.thomashuss.spat.editor.UnsaveTracks;
+import io.github.thomashuss.spat.library.Artist;
+import io.github.thomashuss.spat.library.SavedTrackCollection;
+import io.github.thomashuss.spat.library.Track;
 
 import javax.annotation.Nonnull;
 import javax.swing.JComponent;
@@ -91,7 +91,7 @@ class SavedTrackTableModel
                     case 1 -> artists[0].getName();
                     case 0 -> "";
                     default -> Arrays.stream(artists).map(Artist::getName)
-                        .collect(Collectors.joining(", "));
+                            .collect(Collectors.joining(", "));
                 };
             }
             case 2 -> get(row).getResource().getAlbum().getName();

@@ -5,7 +5,7 @@ import io.github.thomashuss.spat.library.LibraryResource;
 import io.github.thomashuss.spat.library.Playlist;
 
 public abstract class PlaylistEdit
-    extends Edit
+        extends Edit
 {
     protected final Playlist playlist;
 

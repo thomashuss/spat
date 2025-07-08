@@ -1,11 +1,11 @@
 package io.github.thomashuss.spat.gui;
 
-import io.github.thomashuss.spat.library.Playlist;
 import io.github.thomashuss.spat.editor.AddTracks;
 import io.github.thomashuss.spat.editor.Edit;
 import io.github.thomashuss.spat.editor.IllegalEditException;
 import io.github.thomashuss.spat.editor.MoveTracks;
 import io.github.thomashuss.spat.editor.RemoveTracks;
+import io.github.thomashuss.spat.library.Playlist;
 
 import javax.swing.JOptionPane;
 

@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 class StringArrSer
-    extends JsonSerializer<Object[]>
+        extends JsonSerializer<Object[]>
 {
     @Override
     public void serialize(Object[] value, JsonGenerator gen, SerializerProvider serializers)

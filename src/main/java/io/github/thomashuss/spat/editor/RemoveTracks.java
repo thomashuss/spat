@@ -39,11 +39,6 @@ public class RemoveTracks
         this.sr = sr;
     }
 
-    public static RemoveTracks of(Playlist playlist, List<Integer> indices)
-    {
-        return new RemoveTracks(playlist, indices);
-    }
-
     RemoveTracks(Playlist playlist, int startIndex, int numEntries)
     {
         super(playlist);
@@ -51,6 +46,11 @@ public class RemoveTracks
                 .limit(numEntries)
                 .toList();
         sr = indices.stream().map(playlist::getSavedResourceAt).toList();
+    }
+
+    public static RemoveTracks of(Playlist playlist, List<Integer> indices)
+    {
+        return new RemoveTracks(playlist, indices);
     }
 
     public static RemoveTracks of(Playlist playlist, int startIndex, int numEntries)

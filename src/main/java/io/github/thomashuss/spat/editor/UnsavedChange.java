@@ -4,7 +4,7 @@ import io.github.thomashuss.spat.library.AbstractSpotifyResource;
 import io.github.thomashuss.spat.library.SavedResource;
 
 public class UnsavedChange<T extends AbstractSpotifyResource>
-    extends Change<T>
+        extends Change<T>
 {
     T target;
 

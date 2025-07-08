@@ -20,6 +20,12 @@ import java.util.List;
 
 public class ExportWriters
 {
+    public static final ObjectWriter jsonWriter = Spat.mapper.writer();
+    public static final ObjectWriter savedTrackCsvWriter = Spat.csvMapper.writer(
+            Spat.csvMapper.schemaFor(SavedTrack.class).withHeader());
+    public static final ObjectWriter savedAlbumCsvWriter = Spat.csvMapper.writer(
+            Spat.csvMapper.schemaFor(SavedAlbum.class).withHeader());
+
     static {
         Spat.csvMapper.addMixIn(Album.class, AlbumCsvMixin.class);
         Spat.csvMapper.addMixIn(Artist.class, ArtistCsvMixin.class);
@@ -29,12 +35,6 @@ public class ExportWriters
         Spat.mapper.addMixIn(Genre.class, GenreMixin.class);
         Spat.mapper.addMixIn(Track.class, TrackMixin.class);
     }
-
-    public static final ObjectWriter jsonWriter = Spat.mapper.writer();
-    public static final ObjectWriter savedTrackCsvWriter = Spat.csvMapper.writer(
-            Spat.csvMapper.schemaFor(SavedTrack.class).withHeader());
-    public static final ObjectWriter savedAlbumCsvWriter = Spat.csvMapper.writer(
-            Spat.csvMapper.schemaFor(SavedAlbum.class).withHeader());
 
     public static <T extends SavedResource<?>> ObjectWriter getWriterFor(Class<T> cls,
                                                                          boolean isJson)

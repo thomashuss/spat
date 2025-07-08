@@ -13,11 +13,6 @@ public final class Token
     private String accessAuthorization;
     private String refreshToken;
 
-    public void setExpires(Instant expires)
-    {
-        this.expires = expires;
-    }
-
     public void update(Token other)
     {
         expires = other.getExpires();
@@ -31,19 +26,14 @@ public final class Token
         return accessAuthorization != null;
     }
 
-    public void setAccessAuthorization(String accessAuthorization)
-    {
-        this.accessAuthorization = accessAuthorization;
-    }
-
-    public void setRefreshToken(String refreshToken)
-    {
-        this.refreshToken = refreshToken;
-    }
-
     public Instant getExpires()
     {
         return expires;
+    }
+
+    public void setExpires(Instant expires)
+    {
+        this.expires = expires;
     }
 
     public String getAccessAuthorization()
@@ -51,8 +41,18 @@ public final class Token
         return accessAuthorization;
     }
 
+    public void setAccessAuthorization(String accessAuthorization)
+    {
+        this.accessAuthorization = accessAuthorization;
+    }
+
     public String getRefreshToken()
     {
         return refreshToken;
+    }
+
+    public void setRefreshToken(String refreshToken)
+    {
+        this.refreshToken = refreshToken;
     }
 }

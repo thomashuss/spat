@@ -7,7 +7,7 @@ import io.github.thomashuss.spat.library.Track;
 import java.util.List;
 
 public class SavedTrackFilter
-    extends TrackFilter
+        extends TrackFilter
 {
     private final SavedResourceCollection<Track> src;
 
