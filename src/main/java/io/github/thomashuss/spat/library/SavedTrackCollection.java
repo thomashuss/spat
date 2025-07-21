@@ -3,6 +3,8 @@ package io.github.thomashuss.spat.library;
 import io.github.thomashuss.spat.editor.ResourceFilter;
 import io.github.thomashuss.spat.editor.SavedTrackFilter;
 
+import java.time.ZonedDateTime;
+
 public class SavedTrackCollection
         extends SavedResourceCollection<Track>
 {
@@ -14,6 +16,12 @@ public class SavedTrackCollection
     SavedTrackCollection(String name)
     {
         super(name);
+    }
+
+    @Override
+    SavedResource<Track> getSr(ZonedDateTime addedAt, Track track)
+    {
+        return new SavedTrack(addedAt, track);
     }
 
     @Override

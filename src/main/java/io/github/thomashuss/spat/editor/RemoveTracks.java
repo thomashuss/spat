@@ -79,7 +79,7 @@ public class RemoveTracks
         ListIterator<Integer> indIt = indices.listIterator();
         ListIterator<SavedResource<Track>> srIt = sr.listIterator();
         while (indIt.hasNext()) {
-            library.saveResourceToCollection(srIt.next(), playlist, indIt.next());
+            playlist.addResourceAt(srIt.next(), indIt.next());
         }
     }
 

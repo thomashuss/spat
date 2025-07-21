@@ -10,7 +10,7 @@ public final class SavedAlbum
         super();
     }
 
-    SavedAlbum(ZonedDateTime addedAt, Album album)
+    public SavedAlbum(ZonedDateTime addedAt, Album album)
     {
         super(addedAt, album);
     }

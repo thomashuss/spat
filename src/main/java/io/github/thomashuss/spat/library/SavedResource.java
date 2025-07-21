@@ -23,23 +23,10 @@ public abstract sealed class SavedResource<T extends LibraryResource>
     {
     }
 
-    SavedResource(ZonedDateTime addedAt, T resource)
+    public SavedResource(ZonedDateTime addedAt, T resource)
     {
         this.addedAt = addedAt;
         this.resource = resource;
-    }
-
-    static <T extends LibraryResource> SavedResource<T> of(ZonedDateTime addedAt, LibraryResource resource)
-    {
-        if (resource instanceof Track t) {
-            @SuppressWarnings("unchecked")
-            SavedResource<T> ret = (SavedResource<T>) new SavedTrack(addedAt, t);
-            return ret;
-        } else if (resource instanceof Album a) {
-            @SuppressWarnings("unchecked")
-            SavedResource<T> ret = (SavedResource<T>) new SavedAlbum(addedAt, a);
-            return ret;
-        } else throw new RuntimeException("Cannot save this resource type");
     }
 
     void setAddedAt(ZonedDateTime addedAt)

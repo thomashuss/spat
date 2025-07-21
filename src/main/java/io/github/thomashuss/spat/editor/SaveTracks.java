@@ -57,7 +57,7 @@ public class SaveTracks
     @Override
     void commit(Library library)
     {
-        library.saveResourcesToCollection(tracks, addedAt, src);
+        src.saveResources(tracks, addedAt);
     }
 
     @Override

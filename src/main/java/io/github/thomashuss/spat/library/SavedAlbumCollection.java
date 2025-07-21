@@ -2,6 +2,8 @@ package io.github.thomashuss.spat.library;
 
 import io.github.thomashuss.spat.editor.ResourceFilter;
 
+import java.time.ZonedDateTime;
+
 public class SavedAlbumCollection
         extends SavedResourceCollection<Album>
 {
@@ -13,6 +15,12 @@ public class SavedAlbumCollection
     SavedAlbumCollection(String name)
     {
         super(name);
+    }
+
+    @Override
+    SavedResource<Album> getSr(ZonedDateTime addedAt, Album album)
+    {
+        return new SavedAlbum(addedAt, album);
     }
 
     @Override

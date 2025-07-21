@@ -10,7 +10,7 @@ public final class SavedTrack
         super();
     }
 
-    SavedTrack(ZonedDateTime addedAt, Track track)
+    public SavedTrack(ZonedDateTime addedAt, Track track)
     {
         super(addedAt, track);
     }

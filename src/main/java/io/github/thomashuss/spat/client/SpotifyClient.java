@@ -13,7 +13,9 @@ import io.github.thomashuss.spat.library.Genre;
 import io.github.thomashuss.spat.library.Label;
 import io.github.thomashuss.spat.library.Library;
 import io.github.thomashuss.spat.library.Playlist;
+import io.github.thomashuss.spat.library.SavedAlbum;
 import io.github.thomashuss.spat.library.SavedAlbumCollection;
+import io.github.thomashuss.spat.library.SavedTrack;
 import io.github.thomashuss.spat.library.SavedTrackCollection;
 import io.github.thomashuss.spat.library.Track;
 
@@ -337,8 +339,8 @@ public class SpotifyClient
             items = root.get("items");
             if (items != null && items.isArray()) {
                 for (JsonNode savedAlbumNode : items) {
-                    library.saveResourceToCollection(treeToAlbum(savedAlbumNode.get("album"), true),
-                            ZonedDateTime.parse(savedAlbumNode.get("added_at").asText()), sa);
+                    sa.addResource(new SavedAlbum(ZonedDateTime.parse(savedAlbumNode.get("added_at").asText()),
+                            treeToAlbum(savedAlbumNode.get("album"), true)));
                 }
                 progress += (float) items.size() / size * 100;
                 progressTracker.updateProgress((int) progress);
@@ -500,7 +502,7 @@ public class SpotifyClient
     throws IOException
     {
         if (node == null) return null;
-        Artist a = library.artistOf(node.get("id").asText());
+        Artist a = library.getOrCreateArtist(node.get("id").asText());
         if (shouldUpdate || a.getName() == null) {
             mapper.readerForUpdating(a).readValue(node);
             Genre[] genres;
@@ -525,7 +527,7 @@ public class SpotifyClient
             Genre[] genres = new Genre[node.size()];
             int i = 0;
             for (JsonNode genreNode : node) {
-                genres[i++] = library.genreOf(genreNode.asText());
+                genres[i++] = library.getOrCreateGenre(genreNode.asText());
             }
             return genres;
         }
@@ -590,7 +592,7 @@ public class SpotifyClient
     throws IOException, SpotifyClientException
     {
         if (albumNode == null) return null;
-        Album a = library.albumOf(albumNode.get("id").asText());
+        Album a = library.getOrCreateAlbum(albumNode.get("id").asText());
         if (shouldUpdate || a.getName() == null) {
             ObjectReader reader = mapper.readerForUpdating(a);
             reader.readValue(albumNode);
@@ -614,7 +616,7 @@ public class SpotifyClient
     private synchronized Label treeToLabel(JsonNode node)
     {
         if (node != null && node.isTextual()) {
-            return library.labelOf(node.asText());
+            return library.getOrCreateLabel(node.asText());
         }
         return null;
     }
@@ -631,7 +633,7 @@ public class SpotifyClient
     {
         if (trackNode == null || (trackNode.has("is_local") && trackNode.get("is_local").asBoolean(false))
                 || !trackNode.has("id")) return null;
-        Track t = library.trackOf(trackNode.get("id").asText());
+        Track t = library.getOrCreateTrack(trackNode.get("id").asText());
         if (shouldUpdate || t.getName() == null) {
             mapper.readerForUpdating(t).readValue(trackNode);
             if (album == null) {
@@ -657,7 +659,7 @@ public class SpotifyClient
     {
         if (node == null) return;
         AudioFeatures features = mapper.treeToValue(node, AudioFeatures.class);
-        Track t = library.trackOf(node.get("id").asText());
+        Track t = library.getOrCreateTrack(node.get("id").asText());
         t.setFeatures(features);
         library.markModified(t);
     }
@@ -681,8 +683,7 @@ public class SpotifyClient
                 if (!trackNode.has("added_at")) {
                     track = treeToTrack(trackNode, false, null);
                     if (track != null) {
-                        library.saveResourceToCollection(track,
-                                ZonedDateTime.parse(node.get("added_at").asText()), c);
+                        c.addResource(new SavedTrack(ZonedDateTime.parse(node.get("added_at").asText()), track));
                     }
                 }
             }
@@ -699,7 +700,7 @@ public class SpotifyClient
     throws IOException
     {
         if (node == null) return null;
-        Playlist p = library.playlistOf(node.get("id").asText());
+        Playlist p = library.getOrCreatePlaylist(node.get("id").asText());
         mapper.readerForUpdating(p).readValue(node);
         library.markModified(p);
         return p;

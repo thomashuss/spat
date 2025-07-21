@@ -62,7 +62,7 @@ public class UnsaveTracks
         ListIterator<Integer> indIt = indices.listIterator();
         ListIterator<SavedResource<Track>> srIt = sr.listIterator();
         while (indIt.hasNext()) {
-            library.saveResourceToCollection(srIt.next(), src, indIt.next());
+            src.addResourceAt(srIt.next(), indIt.next());
         }
     }
 

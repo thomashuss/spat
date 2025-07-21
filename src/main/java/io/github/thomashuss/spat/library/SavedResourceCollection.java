@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.thomashuss.spat.editor.ResourceFilter;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -104,6 +105,25 @@ public abstract class SavedResourceCollection<T extends AbstractSpotifyResource>
     public void addResourcesAt(List<SavedResource<T>> r, int i)
     {
         resources.addAll(i, r);
+    }
+
+    private List<SavedResource<T>> makeSrList(List<T> resources, ZonedDateTime addedAt)
+    {
+        return resources.stream()
+                .map((t) -> getSr(addedAt, t))
+                .toList();
+    }
+
+    abstract SavedResource<T> getSr(ZonedDateTime addedAt, T t);
+
+    public void saveResources(List<T> resources, ZonedDateTime addedAt)
+    {
+        addResources(makeSrList(resources, addedAt));
+    }
+
+    public void saveResources(List<T> resources, ZonedDateTime addedAt, int i)
+    {
+        addResourcesAt(makeSrList(resources, addedAt), i);
     }
 
     public void removeResource(int index)
